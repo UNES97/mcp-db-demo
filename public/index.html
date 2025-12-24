@@ -54,9 +54,10 @@
 
     <!-- Top Bar -->
     <div class="bg-apm-500 text-white">
-        <div class="max-w-7xl mx-auto px-6 py-2 flex items-center justify-between text-xs">
-            <div class="flex items-center gap-6">
-                <span class="font-medium">OPERATIONS INTELLIGENCE PLATFORM</span>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-2 flex items-center justify-between text-xs">
+            <div class="flex items-center gap-3 sm:gap-6">
+                <span class="font-medium hidden sm:inline">OPERATIONS INTELLIGENCE PLATFORM</span>
+                <span class="font-medium sm:hidden">OPS PLATFORM</span>
             </div>
             <div class="flex items-center gap-2">
                 <div class="w-1.5 h-1.5 rounded-full" id="statusDot"></div>
@@ -67,121 +68,121 @@
 
     <!-- Main Header -->
     <header class="bg-white border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-6 py-4">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-4">
-                    <img src="logo.png" alt="APM Terminals" class="h-12">
-                    <div class="border-l border-gray-300 h-12"></div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
+            <div class="flex items-center justify-between flex-wrap gap-3">
+                <div class="flex items-center gap-3 sm:gap-4">
+                    <img src="logo.png" alt="APM Terminals" class="h-8 sm:h-12">
+                    <div class="border-l border-gray-300 h-8 sm:h-12 hidden sm:block"></div>
                     <div>
-                        <h1 class="text-xl font-bold text-gray-900">APM Terminals</h1>
-                        <p class="text-sm text-gray-600">AI Operations Assistant</p>
+                        <h1 class="text-base sm:text-xl font-bold text-gray-900">APM Terminals</h1>
+                        <p class="text-xs sm:text-sm text-gray-600">AI Operations Assistant</p>
                     </div>
                 </div>
                 <div class="text-right">
-                    <div class="text-xs text-gray-500 uppercase tracking-wider">Tangier Med Terminal</div>
-                    <div class="text-sm font-semibold text-gray-900" id="currentDate"></div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wider hidden sm:block">Tangier Med Terminal</div>
+                    <div class="text-xs sm:text-sm font-semibold text-gray-900" id="currentDate"></div>
                 </div>
             </div>
         </div>
     </header>
 
     <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-6 py-6">
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 h-[calc(100vh-200px)] flex flex-col">
+    <main class="max-w-7xl mx-auto px-3 sm:px-6 py-3 sm:py-6">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 h-[calc(100vh-160px)] sm:h-[calc(100vh-200px)] flex flex-col">
 
             <!-- Quick Queries - Fixed at Top -->
-            <div class="border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white px-6 py-3">
-                <div class="flex items-center gap-2 overflow-x-auto hide-scrollbar">
-                    <svg class="w-4 h-4 text-apm-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white px-3 sm:px-6 py-2 sm:py-3">
+                <div class="flex items-center gap-2 overflow-x-auto hide-scrollbar pb-1">
+                    <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-apm-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                     </svg>
 
                     <button onclick="sendSuggestion('What visits are at the terminal today?')"
-                            class="flex-shrink-0 px-3 py-1.5 bg-white hover:bg-apm-500 border border-gray-200 hover:border-apm-500 text-gray-700 hover:text-white rounded-full text-xs transition-all shadow-sm">
+                            class="flex-shrink-0 px-2.5 sm:px-3 py-1.5 bg-white hover:bg-apm-500 border border-gray-200 hover:border-apm-500 text-gray-700 hover:text-white rounded-full text-xs transition-all shadow-sm whitespace-nowrap">
                         What visits are at the terminal today?
                     </button>
 
-                    <button onclick="sendSuggestion('Show me all inbound vessels this year')"
-                            class="flex-shrink-0 px-3 py-1.5 bg-white hover:bg-apm-500 border border-gray-200 hover:border-apm-500 text-gray-700 hover:text-white rounded-full text-xs transition-all shadow-sm">
-                        Show me all inbound vessels this year
+                    <button onclick="sendSuggestion('Show me all vessels currently working')"
+                            class="flex-shrink-0 px-2.5 sm:px-3 py-1.5 bg-white hover:bg-apm-500 border border-gray-200 hover:border-apm-500 text-gray-700 hover:text-white rounded-full text-xs transition-all shadow-sm whitespace-nowrap">
+                        Show me all vessels currently working
                     </button>
 
-                    <button onclick="sendSuggestion('What is the CMPH of MSC vessels?')"
-                            class="flex-shrink-0 px-3 py-1.5 bg-white hover:bg-apm-500 border border-gray-200 hover:border-apm-500 text-gray-700 hover:text-white rounded-full text-xs transition-all shadow-sm">
-                        What is the CMPH of MSC vessels?
+                    <button onclick="sendSuggestion('List all Maersk vessels and their status')"
+                            class="flex-shrink-0 px-2.5 sm:px-3 py-1.5 bg-white hover:bg-apm-500 border border-gray-200 hover:border-apm-500 text-gray-700 hover:text-white rounded-full text-xs transition-all shadow-sm whitespace-nowrap">
+                        List all Maersk vessels and their status
                     </button>
 
-                    <button onclick="sendSuggestion('Show me vessel details for the latest visit')"
-                            class="flex-shrink-0 px-3 py-1.5 bg-white hover:bg-apm-500 border border-gray-200 hover:border-apm-500 text-gray-700 hover:text-white rounded-full text-xs transition-all shadow-sm">
-                        Show me vessel details for the latest visit
+                    <button onclick="sendSuggestion('Show me upcoming inbound vessels this week')"
+                            class="flex-shrink-0 px-2.5 sm:px-3 py-1.5 bg-white hover:bg-apm-500 border border-gray-200 hover:border-apm-500 text-gray-700 hover:text-white rounded-full text-xs transition-all shadow-sm whitespace-nowrap">
+                        Show me upcoming inbound vessels this week
                     </button>
 
-                    <button onclick="sendSuggestion('Which vessels are currently operational?')"
-                            class="flex-shrink-0 px-3 py-1.5 bg-white hover:bg-apm-500 border border-gray-200 hover:border-apm-500 text-gray-700 hover:text-white rounded-full text-xs transition-all shadow-sm">
-                        Which vessels are currently operational?
+                    <button onclick="sendSuggestion('Which cranes are currently active?')"
+                            class="flex-shrink-0 px-2.5 sm:px-3 py-1.5 bg-white hover:bg-apm-500 border border-gray-200 hover:border-apm-500 text-gray-700 hover:text-white rounded-full text-xs transition-all shadow-sm whitespace-nowrap">
+                        Which cranes are currently active?
                     </button>
 
-                    <button onclick="sendSuggestion('What is the productivity of Maersk Line vessels?')"
-                            class="flex-shrink-0 px-3 py-1.5 bg-white hover:bg-apm-500 border border-gray-200 hover:border-apm-500 text-gray-700 hover:text-white rounded-full text-xs transition-all shadow-sm">
-                        What is the productivity of Maersk Line vessels?
+                    <button onclick="sendSuggestion('Show crane delays by type')"
+                            class="flex-shrink-0 px-2.5 sm:px-3 py-1.5 bg-white hover:bg-apm-500 border border-gray-200 hover:border-apm-500 text-gray-700 hover:text-white rounded-full text-xs transition-all shadow-sm whitespace-nowrap">
+                        Show crane delays by type
                     </button>
 
-                    <button onclick="sendSuggestion('Which crane worked the longest on working vessels?')"
-                            class="flex-shrink-0 px-3 py-1.5 bg-white hover:bg-apm-500 border border-gray-200 hover:border-apm-500 text-gray-700 hover:text-white rounded-full text-xs transition-all shadow-sm">
-                        Which crane worked the longest on working vessels?
+                    <button onclick="sendSuggestion('What is the total container count for today?')"
+                            class="flex-shrink-0 px-2.5 sm:px-3 py-1.5 bg-white hover:bg-apm-500 border border-gray-200 hover:border-apm-500 text-gray-700 hover:text-white rounded-full text-xs transition-all shadow-sm whitespace-nowrap">
+                        What is the total container count for today?
                     </button>
 
-                    <button onclick="sendSuggestion('Show me cranes assigned to visit TNG001')"
-                            class="flex-shrink-0 px-3 py-1.5 bg-white hover:bg-apm-500 border border-gray-200 hover:border-apm-500 text-gray-700 hover:text-white rounded-full text-xs transition-all shadow-sm">
-                        Show me cranes assigned to visit TNG001
+                    <button onclick="sendSuggestion('Show me all MSC vessels scheduled this month')"
+                            class="flex-shrink-0 px-2.5 sm:px-3 py-1.5 bg-white hover:bg-apm-500 border border-gray-200 hover:border-apm-500 text-gray-700 hover:text-white rounded-full text-xs transition-all shadow-sm whitespace-nowrap">
+                        Show me all MSC vessels scheduled this month
                     </button>
 
-                    <button onclick="sendSuggestion('Show inbound vessels from 2025-01-01 to 2025-01-31')"
-                            class="flex-shrink-0 px-3 py-1.5 bg-white hover:bg-apm-500 border border-gray-200 hover:border-apm-500 text-gray-700 hover:text-white rounded-full text-xs transition-all shadow-sm">
-                        Show inbound vessels for January 2025
+                    <button onclick="sendSuggestion('Which berths are occupied right now?')"
+                            class="flex-shrink-0 px-2.5 sm:px-3 py-1.5 bg-white hover:bg-apm-500 border border-gray-200 hover:border-apm-500 text-gray-700 hover:text-white rounded-full text-xs transition-all shadow-sm whitespace-nowrap">
+                        Which berths are occupied right now?
                     </button>
 
-                    <button onclick="sendSuggestion('Show me crane delays')"
-                            class="flex-shrink-0 px-3 py-1.5 bg-white hover:bg-apm-500 border border-gray-200 hover:border-apm-500 text-gray-700 hover:text-white rounded-full text-xs transition-all shadow-sm">
-                        Show me crane delays
+                    <button onclick="sendSuggestion('Show me container moves in the last 24 hours')"
+                            class="flex-shrink-0 px-2.5 sm:px-3 py-1.5 bg-white hover:bg-apm-500 border border-gray-200 hover:border-apm-500 text-gray-700 hover:text-white rounded-full text-xs transition-all shadow-sm whitespace-nowrap">
+                        Show me container moves in the last 24 hours
                     </button>
                 </div>
             </div>
 
             <!-- Messages Container -->
-            <div id="messages" class="flex-1 overflow-y-auto p-6">
+            <div id="messages" class="flex-1 overflow-y-auto p-3 sm:p-6">
 
                 <!-- Welcome Message (shown only initially) -->
                 <div id="welcomeMessage" class="flex flex-col items-center justify-center h-full">
-                    <div class="text-center">
-                        <div class="w-16 h-16 bg-apm-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <svg class="w-8 h-8 text-apm-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="text-center px-4">
+                        <div class="w-12 h-12 sm:w-16 sm:h-16 bg-apm-50 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                            <svg class="w-6 h-6 sm:w-8 sm:h-8 text-apm-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
                             </svg>
                         </div>
-                        <h2 class="text-xl font-semibold text-gray-900 mb-2">How can I help you today?</h2>
-                        <p class="text-sm text-gray-500">Ask me about vessel operations, schedules, or productivity metrics</p>
+                        <h2 class="text-lg sm:text-xl font-semibold text-gray-900 mb-2">How can I help you today?</h2>
+                        <p class="text-xs sm:text-sm text-gray-500">Ask me about vessel operations, schedules, or productivity metrics</p>
                     </div>
                 </div>
 
             </div>
 
             <!-- Input Area -->
-            <div class="border-t border-gray-200 bg-white px-6 py-4">
-                <form id="chatForm" class="flex gap-3">
+            <div class="border-t border-gray-200 bg-white px-3 sm:px-6 py-3 sm:py-4">
+                <form id="chatForm" class="flex gap-2 sm:gap-3">
                     <textarea
                         id="messageInput"
                         rows="1"
-                        placeholder="Ask about vessel visits, productivity metrics, schedules, or any operational data..."
-                        class="flex-1 px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-apm-500 focus:border-transparent focus:bg-white resize-none transition-all"
+                        placeholder="Ask about vessel visits, productivity metrics, schedules..."
+                        class="flex-1 px-3 sm:px-4 py-2 sm:py-3 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-apm-500 focus:border-transparent focus:bg-white resize-none transition-all text-sm sm:text-base"
                         style="max-height: 100px;"></textarea>
 
                     <button
                         id="sendButton"
                         type="submit"
                         disabled
-                        class="px-5 bg-apm-500 hover:bg-apm-600 text-white rounded-lg font-medium transition-all disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm hover:shadow-md">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        class="px-3 sm:px-5 bg-apm-500 hover:bg-apm-600 text-white rounded-lg font-medium transition-all disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm hover:shadow-md min-w-[44px]">
+                        <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
                         </svg>
                     </button>
@@ -210,6 +211,64 @@
         .hide-scrollbar {
             -ms-overflow-style: none;
             scrollbar-width: none;
+        }
+
+        /* Mobile-specific improvements */
+        @media (max-width: 640px) {
+            /* Ensure body fills viewport on mobile */
+            body {
+                min-height: 100vh;
+                min-height: -webkit-fill-available;
+            }
+
+            /* Fix iOS viewport height issue */
+            html {
+                height: -webkit-fill-available;
+            }
+
+            /* Improve touch targets */
+            button {
+                min-height: 44px;
+            }
+
+            /* Better text readability on mobile */
+            #messages {
+                font-size: 14px;
+                line-height: 1.6;
+            }
+
+            /* Optimize message bubbles for mobile */
+            .message-bubble {
+                max-width: 100%;
+                word-break: break-word;
+            }
+
+            /* Prevent zoom on input focus (iOS) */
+            input[type="text"],
+            input[type="search"],
+            textarea {
+                font-size: 16px !important;
+            }
+        }
+
+        /* Landscape mode on mobile */
+        @media (max-width: 896px) and (orientation: landscape) {
+            main {
+                padding-top: 0.5rem;
+                padding-bottom: 0.5rem;
+            }
+        }
+
+        /* Smooth scrolling */
+        #messages {
+            scroll-behavior: smooth;
+        }
+
+        /* Better focus states for accessibility */
+        button:focus-visible,
+        textarea:focus-visible {
+            outline: 2px solid #00ADEF;
+            outline-offset: 2px;
         }
     </style>
 </body>

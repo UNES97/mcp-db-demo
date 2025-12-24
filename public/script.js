@@ -67,10 +67,10 @@ function addMessage(content, isUser = false) {
         // User message - using APM navy gradient
         messageDiv.innerHTML = `
             <div class="flex justify-end">
-                <div class="max-w-3xl">
-                    <div class="bg-gradient-to-br from-apm-500 to-apm-600 text-white rounded-2xl rounded-tr-md px-4 py-3 shadow-sm">
-                        <p class="text-sm leading-relaxed whitespace-pre-wrap">${escapeHtml(content)}</p>
-                        <div class="flex items-center gap-1.5 mt-2 text-xs text-white/70">
+                <div class="max-w-[85%] sm:max-w-3xl">
+                    <div class="bg-gradient-to-br from-apm-500 to-apm-600 text-white rounded-2xl rounded-tr-md px-3 sm:px-4 py-2.5 sm:py-3 shadow-sm">
+                        <p class="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">${escapeHtml(content)}</p>
+                        <div class="flex items-center gap-1.5 mt-1.5 sm:mt-2 text-xs text-white/70">
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
@@ -84,23 +84,23 @@ function addMessage(content, isUser = false) {
         // Assistant message
         messageDiv.innerHTML = `
             <div class="flex">
-                <div class="max-w-4xl">
-                    <div class="flex gap-3">
+                <div class="max-w-[95%] sm:max-w-4xl">
+                    <div class="flex gap-2 sm:gap-3">
                         <div class="flex-shrink-0">
-                            <div class="w-9 h-9 bg-gradient-to-br from-apm-500 to-apm-600 rounded-lg flex items-center justify-center shadow-sm">
-                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="w-7 h-7 sm:w-9 sm:h-9 bg-gradient-to-br from-apm-500 to-apm-600 rounded-lg flex items-center justify-center shadow-sm">
+                                <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
                                 </svg>
                             </div>
                         </div>
-                        <div class="flex-1">
-                            <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-md px-4 py-3 shadow-sm">
+                        <div class="flex-1 min-w-0">
+                            <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-md px-3 sm:px-4 py-2.5 sm:py-3 shadow-sm">
                                 <div class="flex items-center gap-2 mb-2 pb-2 border-b border-gray-100 text-xs">
-                                    <span class="font-semibold text-apm-500">APM Operations</span>
-                                    <span class="text-gray-400">•</span>
-                                    <span class="text-gray-500">${formatTime()}</span>
+                                    <span class="font-semibold text-apm-500 text-xs sm:text-sm">APM Operations</span>
+                                    <span class="text-gray-400 hidden sm:inline">•</span>
+                                    <span class="text-gray-500 hidden sm:inline">${formatTime()}</span>
                                 </div>
-                                <div class="prose prose-sm max-w-none text-gray-800">
+                                <div class="prose prose-sm max-w-none text-gray-800 text-xs sm:text-sm">
                                     ${formatMessage(content)}
                                 </div>
                             </div>
@@ -161,24 +161,24 @@ function showLoading() {
 
     loadingDiv.innerHTML = `
         <div class="flex">
-            <div class="max-w-4xl">
-                <div class="flex gap-3">
+            <div class="max-w-[95%] sm:max-w-4xl">
+                <div class="flex gap-2 sm:gap-3">
                     <div class="flex-shrink-0">
-                        <div class="w-9 h-9 bg-gradient-to-br from-apm-500 to-apm-600 rounded-lg flex items-center justify-center shadow-sm">
-                            <svg class="w-5 h-5 text-white animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="w-7 h-7 sm:w-9 sm:h-9 bg-gradient-to-br from-apm-500 to-apm-600 rounded-lg flex items-center justify-center shadow-sm">
+                            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
                             </svg>
                         </div>
                     </div>
-                    <div class="flex-1">
-                        <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-md px-4 py-3 shadow-sm">
-                            <div class="flex items-center gap-3">
+                    <div class="flex-1 min-w-0">
+                        <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-md px-3 sm:px-4 py-2.5 sm:py-3 shadow-sm">
+                            <div class="flex items-center gap-2 sm:gap-3">
                                 <div class="flex gap-1.5">
                                     <div class="w-2 h-2 bg-apm-500 rounded-full animate-bounce" style="animation-delay: 0s"></div>
                                     <div class="w-2 h-2 bg-apm-500 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
                                     <div class="w-2 h-2 bg-apm-500 rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
                                 </div>
-                                <span class="text-xs text-gray-500">Analyzing your query...</span>
+                                <span class="text-xs sm:text-sm text-gray-500">Analyzing your query...</span>
                             </div>
                         </div>
                     </div>
@@ -254,14 +254,14 @@ async function sendMessage(message) {
         const errorDiv = document.createElement('div');
         errorDiv.className = 'mb-4';
         errorDiv.innerHTML = `
-            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-                <div class="flex items-start gap-3">
-                    <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4">
+                <div class="flex items-start gap-2 sm:gap-3">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
                     <div>
-                        <p class="text-sm font-semibold text-red-900">Connection Error</p>
-                        <p class="text-sm text-red-700 mt-1">Unable to process your request. Please check your connection and try again.</p>
+                        <p class="text-xs sm:text-sm font-semibold text-red-900">Connection Error</p>
+                        <p class="text-xs sm:text-sm text-red-700 mt-1">Unable to process your request. Please check your connection and try again.</p>
                     </div>
                 </div>
             </div>
