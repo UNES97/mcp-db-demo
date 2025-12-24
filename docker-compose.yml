@@ -1,36 +1,31 @@
 version: '3.8'
 
 services:
-  # MySQL Database
   mysql:
-    image: mysql:5.7
-    container_name: apm-terminal-mysql
+    image: mysql:8.0
+    container_name: apm-mysql
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
-      MYSQL_DATABASE: apm_terminal
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-apm_terminal}
       MYSQL_USER: ${MYSQL_USER:-apm_user}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-apm_password}
     ports:
-      - "${MYSQL_PORT:-3307}:3306"
+      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./demo_database.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    networks:
-      - apm-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 30s
 
-  # APM Terminal Application
   app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: apm-terminal-app
+    container_name: apm-app
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -39,24 +34,15 @@ services:
       DB_PORT: 3306
       DB_USER: ${MYSQL_USER:-apm_user}
       DB_PASSWORD: ${MYSQL_PASSWORD:-apm_password}
-      DB_NAME: apm_terminal
+      DB_NAME: ${MYSQL_DATABASE:-apm_terminal}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
       AI_MODEL: ${AI_MODEL:-gpt-4o-mini}
     ports:
-      - "${APP_PORT:-3000}:3000"
+      - "3000:3000"
     depends_on:
       mysql:
         condition: service_healthy
-    networks:
-      - apm-network
-    volumes:
-      - ./public:/app/public:ro
-
-networks:
-  apm-network:
-    driver: bridge
 
 volumes:
   mysql_data:
-    driver: local
