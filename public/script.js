@@ -23,7 +23,7 @@ async function checkServerStatus() {
 
         if (data.status === 'ok') {
             statusDot.className = 'w-1.5 h-1.5 rounded-full bg-green-400';
-            statusText.textContent = `Connected • ${data.provider}`;
+            statusText.textContent = 'Connected';
             sendButton.disabled = false;
         }
     } catch (error) {
