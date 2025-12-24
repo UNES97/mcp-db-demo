@@ -315,11 +315,11 @@ async function startServer() {
     console.log(`✓ ${aiProvider} API key configured`);
 
     // Start Express server
-    app.listen(port, () => {
+    app.listen(port, '0.0.0.0', () => {
       console.log(`\n🚀 APM Terminal Chat Server running!`);
-      console.log(`   URL: http://localhost:${port}`);
+      console.log(`   URL: http://0.0.0.0:${port}`);
       console.log(`   AI Provider: ${aiProvider}`);
-      console.log(`\n   Open http://localhost:${port} in your browser to start chatting!\n`);
+      console.log(`\n   Server is accessible from outside the container!\n`);
     });
 
   } catch (error) {
