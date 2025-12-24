@@ -6,15 +6,14 @@ WORKDIR /app
 
 # Install dependencies first (for better caching)
 COPY package*.json ./
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci && npm cache clean --force
 
 # Copy application source
 COPY . .
 
 # Build TypeScript
-RUN npm install typescript @types/node @types/express @types/cors --save-dev && \
-    npm run build && \
-    npm prune --production
+RUN npm run build && \
+    npm prune --omit=dev
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
