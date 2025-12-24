@@ -5,6 +5,7 @@ import OpenAI from 'openai';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { initializeDatabase, executeQuery } from './database.js';
+import { initializeDatabaseSchema } from './init-database.js';
 import { QUERIES } from './queries.js';
 
 dotenv.config();
@@ -300,7 +301,10 @@ app.get('/api/health', (req, res) => {
 // Start server
 async function startServer() {
   try {
-    // Initialize database
+    // Import database schema if needed
+    await initializeDatabaseSchema();
+
+    // Initialize database connection pool
     await initializeDatabase();
     console.log('✓ Database connected');
 
