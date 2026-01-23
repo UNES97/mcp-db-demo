@@ -1,9 +1,9 @@
 -- APM Terminal Demo Database
 -- MySQL Script for Testing MCP Server with Crane and Delay Data
 
--- Create database
-CREATE DATABASE IF NOT EXISTS apm_terminal;
-USE apm_terminal;
+-- Create database (commented out - use DB_NAME from .env)
+-- CREATE DATABASE IF NOT EXISTS apm_terminal;
+-- USE apm_terminal;
 
 -- Drop tables if they exist (in correct order due to foreign keys - children first)
 DROP TABLE IF EXISTS vsl_crane_statistics_delays;
@@ -210,12 +210,12 @@ INSERT INTO xps_pointofwork (name, description) VALUES
 
 -- Crane Shifts
 INSERT INTO xps_craneshift (owner_pow_gkey, shift_start, shift_end) VALUES
-(1, DATE_SUB(NOW(), INTERVAL 8 HOUR), NOW()),
-(1, DATE_SUB(NOW(), INTERVAL 8 HOUR), NOW()),
-(2, DATE_SUB(NOW(), INTERVAL 8 HOUR), NOW()),
-(2, DATE_SUB(NOW(), INTERVAL 8 HOUR), NOW()),
-(3, DATE_SUB(NOW(), INTERVAL 24 HOUR), DATE_SUB(NOW(), INTERVAL 8 HOUR)),
-(3, DATE_SUB(NOW(), INTERVAL 24 HOUR), DATE_SUB(NOW(), INTERVAL 8 HOUR));
+(1, '2026-01-23 00:00:00', '2026-01-23 08:00:00'),
+(1, '2026-01-23 08:00:00', '2026-01-23 16:00:00'),
+(2, '2026-01-23 00:00:00', '2026-01-23 08:00:00'),
+(2, '2026-01-23 08:00:00', '2026-01-23 16:00:00'),
+(3, '2026-01-22 00:00:00', '2026-01-22 16:00:00'),
+(3, '2026-01-22 16:00:00', '2026-01-23 00:00:00');
 
 -- Work Queues
 INSERT INTO inv_wq (first_shift_gkey, queue_name) VALUES
@@ -246,21 +246,21 @@ INSERT INTO argo_visit_details (eta, etd, service, EST_DISCHARGE, EST_LOAD, EST_
 ('2026-01-12 08:00:00', '2026-01-13 06:00:00', 4, 640, 660, 26, 14),
 ('2026-01-15 12:00:00', '2026-01-16 10:00:00', 5, 570, 590, 22, 11);
 
--- Today's visits
+-- Current/Today's visits (using fixed dates for stability)
 INSERT INTO argo_visit_details (eta, etd, service, EST_DISCHARGE, EST_LOAD, EST_RESTOW, EST_SHIFT) VALUES
-(NOW(), DATE_ADD(NOW(), INTERVAL 18 HOUR), 1, 450, 380, 20, 10),
-(DATE_ADD(NOW(), INTERVAL 6 HOUR), DATE_ADD(NOW(), INTERVAL 24 HOUR), 2, 520, 430, 15, 5);
+('2026-01-23 08:00:00', '2026-01-24 02:00:00', 1, 450, 380, 20, 10),
+('2026-01-23 14:00:00', '2026-01-24 08:00:00', 2, 520, 430, 15, 5);
 
 -- Recent visits (this week)
 INSERT INTO argo_visit_details (eta, etd, service, EST_DISCHARGE, EST_LOAD, EST_RESTOW, EST_SHIFT) VALUES
-(DATE_SUB(NOW(), INTERVAL 2 DAY), DATE_SUB(NOW(), INTERVAL 1 DAY), 3, 680, 720, 30, 20),
-(DATE_SUB(NOW(), INTERVAL 1 DAY), NOW(), 4, 390, 410, 10, 5);
+('2026-01-21 06:00:00', '2026-01-22 04:00:00', 3, 680, 720, 30, 20),
+('2026-01-22 10:00:00', '2026-01-23 06:00:00', 4, 390, 410, 10, 5);
 
 -- Inbound visits (future - this year)
 INSERT INTO argo_visit_details (eta, etd, service, EST_DISCHARGE, EST_LOAD, EST_RESTOW, EST_SHIFT) VALUES
-(DATE_ADD(NOW(), INTERVAL 3 DAY), DATE_ADD(NOW(), INTERVAL 4 DAY), 5, 550, 600, 25, 15),
-(DATE_ADD(NOW(), INTERVAL 5 DAY), DATE_ADD(NOW(), INTERVAL 6 DAY), 1, 470, 490, 18, 12),
-(DATE_ADD(NOW(), INTERVAL 7 DAY), DATE_ADD(NOW(), INTERVAL 8 DAY), 2, 510, 530, 20, 10);
+('2026-01-26 10:00:00', '2026-01-27 08:00:00', 5, 550, 600, 25, 15),
+('2026-01-28 06:00:00', '2026-01-29 04:00:00', 1, 470, 490, 18, 12),
+('2026-01-30 12:00:00', '2026-01-31 10:00:00', 2, 510, 530, 20, 10);
 
 -- Additional 2026 visits - January to March
 INSERT INTO argo_visit_details (eta, etd, service, EST_DISCHARGE, EST_LOAD, EST_RESTOW, EST_SHIFT) VALUES
@@ -297,15 +297,15 @@ INSERT INTO argo_carrier_visit (id, carrier_mode, phase, ata, atd, cvcvd_gkey) V
 ('TNG_JAN12', 'VESSEL', '60DEPARTED', '2026-01-12 08:00:00', '2026-01-13 06:00:00', 4),
 ('TNG_JAN15', 'VESSEL', '60DEPARTED', '2026-01-15 12:00:00', '2026-01-16 10:00:00', 5);
 
--- Today's visits
+-- Current/Today's visits (using fixed dates for stability)
 INSERT INTO argo_carrier_visit (id, carrier_mode, phase, ata, atd, cvcvd_gkey) VALUES
-('TNG001', 'VESSEL', '40WORKING', NOW(), NULL, 6),
-('TNG002', 'VESSEL', '30ARRIVED', DATE_ADD(NOW(), INTERVAL 6 HOUR), NULL, 7);
+('TNG001', 'VESSEL', '40WORKING', '2026-01-23 08:00:00', NULL, 6),
+('TNG002', 'VESSEL', '30ARRIVED', '2026-01-23 14:00:00', NULL, 7);
 
 -- Recent completed visits
 INSERT INTO argo_carrier_visit (id, carrier_mode, phase, ata, atd, cvcvd_gkey) VALUES
-('TNG003', 'VESSEL', '60DEPARTED', DATE_SUB(NOW(), INTERVAL 2 DAY), DATE_SUB(NOW(), INTERVAL 1 DAY), 8),
-('TNG004', 'VESSEL', '50COMPLETE', DATE_SUB(NOW(), INTERVAL 1 DAY), NOW(), 9);
+('TNG003', 'VESSEL', '60DEPARTED', '2026-01-21 06:00:00', '2026-01-22 04:00:00', 8),
+('TNG004', 'VESSEL', '50COMPLETE', '2026-01-22 10:00:00', '2026-01-23 06:00:00', 9);
 
 -- Inbound visits
 INSERT INTO argo_carrier_visit (id, carrier_mode, phase, ata, atd, cvcvd_gkey) VALUES
@@ -345,13 +345,13 @@ INSERT INTO vsl_vessel_visit_details (vvd_gkey, vessel_gkey, start_work, end_wor
 (4, 11, '2026-01-12 08:30:00', '2026-01-13 05:45:00', '2026-01-12 10:00:00'), -- TNG_JAN12 - HAPAG NAVIGATOR
 (5, 12, '2026-01-15 12:30:00', '2026-01-16 09:45:00', '2026-01-15 14:00:00'), -- TNG_JAN15 - COSCO PRIDE
 -- TNG001 - MSC MEDITERRANEAN (currently working)
-(6, 1, NOW(), NULL, DATE_ADD(NOW(), INTERVAL 2 HOUR)),
+(6, 1, '2026-01-23 08:00:00', NULL, '2026-01-23 10:00:00'),
 -- TNG002 - MAERSK ESSEX (arrived, not yet working)
 (7, 2, NULL, NULL, NULL),
 -- TNG003 - CMA CGM TANGER (departed)
-(8, 3, DATE_SUB(NOW(), INTERVAL 2 DAY), DATE_SUB(NOW(), INTERVAL 1 DAY), DATE_SUB(NOW(), INTERVAL 46 HOUR)),
+(8, 3, '2026-01-21 06:00:00', '2026-01-22 04:00:00', '2026-01-21 08:00:00'),
 -- TNG004 - HAPAG EXPRESS (complete)
-(9, 4, DATE_SUB(NOW(), INTERVAL 1 DAY), NOW(), DATE_SUB(NOW(), INTERVAL 23 HOUR)),
+(9, 4, '2026-01-22 10:00:00', '2026-01-23 06:00:00', '2026-01-22 11:00:00'),
 -- TNG005 - COSCO GLORY (inbound)
 (10, 5, NULL, NULL, NULL),
 -- TNG006 - MSC FORTUNE (inbound)
@@ -388,14 +388,14 @@ SELECT
     'DSCH',
     'TNG001',
     CONCAT('YARD-A', FLOOR(1 + RAND() * 50)),
-    DATE_ADD(NOW(), INTERVAL FLOOR(RAND() * 3 * 60) MINUTE),
+    DATE_ADD('2026-01-23 08:00:00', INTERVAL FLOOR(RAND() * 3 * 60) MINUTE),
     CONCAT('MSCU', LPAD(seq, 7, '0')),
     CASE
         WHEN seq % 3 = 0 THEN 1
         WHEN seq % 3 = 1 THEN 2
         ELSE 3
     END,
-    DATE_ADD(NOW(), INTERVAL FLOOR(RAND() * 3 * 60) MINUTE)
+    DATE_ADD('2026-01-23 08:00:00', INTERVAL FLOOR(RAND() * 3 * 60) MINUTE)
 FROM (
     SELECT @row := @row + 1 as seq
     FROM (SELECT 0 UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3) t1,
@@ -413,14 +413,14 @@ SELECT
     'LOAD',
     CONCAT('YARD-B', FLOOR(1 + RAND() * 50)),
     'TNG001',
-    DATE_ADD(NOW(), INTERVAL FLOOR(RAND() * 3 * 60) MINUTE),
+    DATE_ADD('2026-01-23 08:00:00', INTERVAL FLOOR(RAND() * 3 * 60) MINUTE),
     CONCAT('MSCU', LPAD(seq + 320, 7, '0')),
     CASE
         WHEN seq % 3 = 0 THEN 1
         WHEN seq % 3 = 1 THEN 2
         ELSE 3
     END,
-    DATE_ADD(NOW(), INTERVAL FLOOR(RAND() * 3 * 60) MINUTE)
+    DATE_ADD('2026-01-23 08:00:00', INTERVAL FLOOR(RAND() * 3 * 60) MINUTE)
 FROM (
     SELECT @row := @row + 1 as seq
     FROM (SELECT 0 UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3) t1,
@@ -437,13 +437,13 @@ SELECT
     'DSCH',
     'TNG003',
     CONCAT('YARD-C', FLOOR(1 + RAND() * 50)),
-    DATE_SUB(NOW(), INTERVAL 1 + FLOOR(RAND() * 20) HOUR),
+    DATE_SUB('2026-01-22 04:00:00', INTERVAL 1 + FLOOR(RAND() * 20) HOUR),
     CONCAT('CMAU', LPAD(seq, 7, '0')),
     CASE
         WHEN seq % 2 = 0 THEN 1
         ELSE 2
     END,
-    DATE_SUB(NOW(), INTERVAL 1 + FLOOR(RAND() * 20) HOUR)
+    DATE_SUB('2026-01-22 04:00:00', INTERVAL 1 + FLOOR(RAND() * 20) HOUR)
 FROM (
     SELECT @row := @row + 1 as seq
     FROM (SELECT 0 UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3) t1,
@@ -460,13 +460,13 @@ SELECT
     'LOAD',
     CONCAT('YARD-D', FLOOR(1 + RAND() * 50)),
     'TNG003',
-    DATE_SUB(NOW(), INTERVAL 1 + FLOOR(RAND() * 20) HOUR),
+    DATE_SUB('2026-01-22 04:00:00', INTERVAL 1 + FLOOR(RAND() * 20) HOUR),
     CONCAT('CMAU', LPAD(seq + 680, 7, '0')),
     CASE
         WHEN seq % 2 = 0 THEN 1
         ELSE 2
     END,
-    DATE_SUB(NOW(), INTERVAL 1 + FLOOR(RAND() * 20) HOUR)
+    DATE_SUB('2026-01-22 04:00:00', INTERVAL 1 + FLOOR(RAND() * 20) HOUR)
 FROM (
     SELECT @row := @row + 1 as seq
     FROM (SELECT 0 UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3) t1,
@@ -593,24 +593,24 @@ INSERT INTO vsl_crane_statistics_delays (cstat_gkey, crane_delay_type_gkey, dela
 -- TNG001 delays
 INSERT INTO vsl_crane_statistics_delays (cstat_gkey, crane_delay_type_gkey, delay_date, time, notes) VALUES
 -- QC01 delays
-(11, 1, DATE_ADD(NOW(), INTERVAL 45 MINUTE), 35, 'Spreader malfunction - maintenance required'),
-(11, 7, DATE_ADD(NOW(), INTERVAL 90 MINUTE), 15, 'Safety stop for personnel near crane'),
+(11, 1, '2026-01-23 08:45:00', 35, 'Spreader malfunction - maintenance required'),
+(11, 7, '2026-01-23 09:30:00', 15, 'Safety stop for personnel near crane'),
 -- QC02 delays
-(12, 3, DATE_ADD(NOW(), INTERVAL 60 MINUTE), 42, 'Waiting for import containers to be positioned'),
-(12, 8, DATE_ADD(NOW(), INTERVAL 120 MINUTE), 28, 'Repositioning for different bay'),
+(12, 3, '2026-01-23 09:00:00', 42, 'Waiting for import containers to be positioned'),
+(12, 8, '2026-01-23 10:00:00', 28, 'Repositioning for different bay'),
 -- QC03 delays
-(13, 2, DATE_ADD(NOW(), INTERVAL 30 MINUTE), 20, 'Operational delay - stowage plan revision');
+(13, 2, '2026-01-23 08:30:00', 20, 'Operational delay - stowage plan revision');
 
 -- TNG003 delays (historical)
 INSERT INTO vsl_crane_statistics_delays (cstat_gkey, crane_delay_type_gkey, delay_date, time, notes) VALUES
 -- QC01 delays
-(14, 1, DATE_SUB(NOW(), INTERVAL 36 HOUR), 125, 'Major hydraulic system failure'),
-(14, 3, DATE_SUB(NOW(), INTERVAL 30 HOUR), 55, 'Waiting for cargo - vessel stowage issue'),
-(14, 4, DATE_SUB(NOW(), INTERVAL 28 HOUR), 90, 'Heavy wind - operations suspended'),
+(14, 1, '2026-01-21 16:00:00', 125, 'Major hydraulic system failure'),
+(14, 3, '2026-01-21 22:00:00', 55, 'Waiting for cargo - vessel stowage issue'),
+(14, 4, '2026-01-22 00:00:00', 90, 'Heavy wind - operations suspended'),
 -- QC02 delays
-(15, 2, DATE_SUB(NOW(), INTERVAL 35 HOUR), 45, 'Operational coordination delay'),
-(15, 6, DATE_SUB(NOW(), INTERVAL 32 HOUR), 65, 'Power supply interruption'),
-(15, 5, DATE_SUB(NOW(), INTERVAL 26 HOUR), 30, 'Labor shift change coordination');
+(15, 2, '2026-01-21 17:00:00', 45, 'Operational coordination delay'),
+(15, 6, '2026-01-21 20:00:00', 65, 'Power supply interruption'),
+(15, 5, '2026-01-22 02:00:00', 30, 'Labor shift change coordination');
 
 -- Summary statistics
 SELECT '=== DATABASE SETUP COMPLETE ===' as '';
