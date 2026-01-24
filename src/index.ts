@@ -125,6 +125,35 @@ const tools: Tool[] = [
       required: ['vesselName'],
     },
   },
+  {
+    name: 'get_vessel_cranes',
+    description:
+      'Get all cranes that worked on a specific vessel visit with their first and last move times. Shows crane allocation and timing.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        visitId: {
+          type: 'string',
+          description: 'The visit ID of the vessel (e.g., "TNG001")',
+        },
+      },
+      required: ['visitId'],
+    },
+  },
+  {
+    name: 'get_crane_delays',
+    description:
+      'Get historical crane delay information including delay codes, descriptions, and durations. Can be filtered by vessel visit ID or return all delays.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        visitId: {
+          type: 'string',
+          description: 'Optional vessel visit ID to filter delays. If not provided, returns all delays.',
+        },
+      },
+    },
+  },
 ];
 
 // Create MCP server
@@ -256,6 +285,50 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             ],
           };
         }
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(results, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'get_vessel_cranes': {
+        if (!args || typeof args !== 'object' || !('visitId' in args)) {
+          throw new Error('visitId is required');
+        }
+        const { visitId } = args as { visitId: string };
+        const results = await executeQuery(QUERIES.VESSEL_CRANES, [visitId]);
+
+        if (results.length === 0) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `No crane data found for vessel visit: ${visitId}`,
+              },
+            ],
+          };
+        }
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(results, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'get_crane_delays': {
+        const visitId = args && typeof args === 'object' && 'visitId' in args
+          ? (args as { visitId: string }).visitId
+          : null;
+        const results = await executeQuery(QUERIES.CRANE_DELAYS_HISTORICAL, [visitId, visitId]);
 
         return {
           content: [

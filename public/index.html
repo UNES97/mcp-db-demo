@@ -68,8 +68,9 @@
 
     <!-- Main Header -->
     <header class="bg-white border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
-            <div class="flex items-center justify-between flex-wrap gap-3">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6">
+            <!-- Top Section: Logo and Info -->
+            <div class="flex items-center justify-between py-3 sm:py-4">
                 <div class="flex items-center gap-3 sm:gap-4">
                     <img src="logo.png" alt="APM Terminals" class="h-8 sm:h-12">
                     <div class="border-l border-gray-300 h-8 sm:h-12 hidden sm:block"></div>
@@ -78,11 +79,28 @@
                         <p class="text-xs sm:text-sm text-gray-600">AI Operations Assistant</p>
                     </div>
                 </div>
-                <div class="text-right">
-                    <div class="text-xs text-gray-500 uppercase tracking-wider hidden sm:block">Tangier Med Terminal</div>
+                <div class="text-right hidden sm:block">
+                    <div class="text-xs text-gray-500 uppercase tracking-wider">Tangier Med Terminal</div>
                     <div class="text-xs sm:text-sm font-semibold text-gray-900" id="currentDate"></div>
                 </div>
             </div>
+
+            <!-- Navigation Menu -->
+            <nav class="flex items-center gap-6 sm:gap-8 -mb-px">
+                <a href="index.html" class="group flex items-center gap-2 px-1 py-3 border-b-2 border-apm-500 text-apm-600 font-medium text-sm transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                    </svg>
+                    <span class="hidden sm:inline">Home</span>
+                </a>
+                <a href="delays.html" class="group flex items-center gap-2 px-1 py-3 border-b-2 border-transparent text-gray-600 hover:text-apm-600 hover:border-gray-300 font-medium text-sm transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                    <span class="hidden sm:inline">Delay Analytics</span>
+                    <span class="sm:hidden">Delays</span>
+                </a>
+            </nav>
         </div>
     </header>
 

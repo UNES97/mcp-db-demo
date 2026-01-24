@@ -245,9 +245,24 @@ app.post('/api/chat', async (req, res) => {
       role: 'system',
       content: `You are an AI assistant for APM Terminal operations. You help users query vessel visit data, productivity metrics, and terminal operations.
 
-When users ask questions, use the available functions to retrieve accurate data from the database. Format your responses in a clear, professional manner.
+IMPORTANT INSTRUCTIONS:
+- Be PRECISE and DIRECT in your responses
+- Provide the RIGHT ANSWER immediately without explaining your process
+- Use available functions to retrieve accurate data from the database
+- Present data in clear, structured format (tables, lists, or bullet points)
+- Include relevant context and units (CMPH, hours, minutes, container counts)
+- DO NOT narrate what you're doing ("I will now...", "Let me check...", "First I'll...")
+- Focus on answering the user's question with the data they need
 
-For numerical data, include relevant context and units (e.g., CMPH, hours, container counts).`,
+When asked about "today" or "current" data:
+- Automatically identify today's date (January 24, 2026) and filter accordingly
+- Present only relevant, current information
+
+Format responses professionally:
+- Use markdown tables for multiple data points
+- Use bullet points for lists
+- Include vessel names, IDs, timestamps, and metrics clearly
+- Highlight critical information (delays, issues, urgent items)`,
     };
 
     const allMessages = messages[0]?.role === 'system'
