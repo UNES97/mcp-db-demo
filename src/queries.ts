@@ -135,6 +135,24 @@ export const QUERIES = {
     ORDER BY vd.eta DESC
   `,
 
+  // Get visits by terminal for specific date
+  VISITS_BY_TERMINAL_DATE: `
+    SELECT
+      vslnm.name AS vesselName,
+      argo.id AS visitId,
+      argo.phase AS phase,
+      argo.ata AS ata,
+      vd.eta AS eta,
+      vd.etd AS etd
+    FROM argo_carrier_visit argo
+    LEFT JOIN argo_visit_details vd ON vd.gkey = argo.cvcvd_gkey
+    LEFT JOIN vsl_vessel_visit_details vvd ON argo.cvcvd_gkey = vvd.vvd_gkey
+    LEFT JOIN vsl_vessels vslnm ON vslnm.gkey = vvd.vessel_gkey
+    WHERE argo.carrier_mode = 'VESSEL'
+      AND DATE(vd.eta) = ?
+    ORDER BY vd.eta DESC
+  `,
+
   // Get vessel productivity (CMPH - Container Moves Per Hour)
   VESSEL_PRODUCTIVITY: `
     SELECT

@@ -246,27 +246,71 @@ INSERT INTO argo_visit_details (eta, etd, service, EST_DISCHARGE, EST_LOAD, EST_
 ('2026-01-12 08:00:00', '2026-01-13 06:00:00', 4, 640, 660, 26, 14),
 ('2026-01-15 12:00:00', '2026-01-16 10:00:00', 5, 570, 590, 22, 11);
 
--- Current/Today's visits (using fixed dates for stability)
-INSERT INTO argo_visit_details (eta, etd, service, EST_DISCHARGE, EST_LOAD, EST_RESTOW, EST_SHIFT) VALUES
-('2026-01-23 08:00:00', '2026-01-24 02:00:00', 1, 450, 380, 20, 10),
-('2026-01-23 14:00:00', '2026-01-24 08:00:00', 2, 520, 430, 15, 5);
-
--- Recent visits (this week)
+-- Recent completed visits (this week)
 INSERT INTO argo_visit_details (eta, etd, service, EST_DISCHARGE, EST_LOAD, EST_RESTOW, EST_SHIFT) VALUES
 ('2026-01-21 06:00:00', '2026-01-22 04:00:00', 3, 680, 720, 30, 20),
-('2026-01-22 10:00:00', '2026-01-23 06:00:00', 4, 390, 410, 10, 5);
+('2026-01-22 10:00:00', '2026-01-23 06:00:00', 4, 390, 410, 10, 5),
+('2026-01-23 08:00:00', '2026-01-24 02:00:00', 1, 450, 380, 20, 10);
 
--- Inbound visits (future - this year)
+-- Current/Today's visits (January 24, 2026)
 INSERT INTO argo_visit_details (eta, etd, service, EST_DISCHARGE, EST_LOAD, EST_RESTOW, EST_SHIFT) VALUES
-('2026-01-26 10:00:00', '2026-01-27 08:00:00', 5, 550, 600, 25, 15),
-('2026-01-28 06:00:00', '2026-01-29 04:00:00', 1, 470, 490, 18, 12),
-('2026-01-30 12:00:00', '2026-01-31 10:00:00', 2, 510, 530, 20, 10);
+('2026-01-24 06:00:00', '2026-01-25 04:00:00', 2, 520, 480, 22, 12),
+('2026-01-24 12:00:00', '2026-01-25 08:00:00', 5, 460, 420, 18, 8),
+('2026-01-24 18:00:00', '2026-01-25 14:00:00', 3, 510, 490, 20, 10);
 
--- Additional 2026 visits - January to March
+-- Next 10 Days Daily Visits (Jan 25 - Feb 3, 2026)
+-- January 25, 2026
 INSERT INTO argo_visit_details (eta, etd, service, EST_DISCHARGE, EST_LOAD, EST_RESTOW, EST_SHIFT) VALUES
 ('2026-01-25 08:00:00', '2026-01-26 02:00:00', 1, 620, 580, 25, 15),
-('2026-01-28 14:00:00', '2026-01-29 10:00:00', 3, 490, 510, 18, 10),
-('2026-02-02 06:00:00', '2026-02-03 04:00:00', 2, 710, 690, 30, 20),
+('2026-01-25 14:00:00', '2026-01-26 10:00:00', 4, 540, 510, 19, 9);
+
+-- January 26, 2026
+INSERT INTO argo_visit_details (eta, etd, service, EST_DISCHARGE, EST_LOAD, EST_RESTOW, EST_SHIFT) VALUES
+('2026-01-26 10:00:00', '2026-01-27 08:00:00', 5, 550, 600, 25, 15),
+('2026-01-26 16:00:00', '2026-01-27 12:00:00', 2, 480, 450, 17, 8);
+
+-- January 27, 2026
+INSERT INTO argo_visit_details (eta, etd, service, EST_DISCHARGE, EST_LOAD, EST_RESTOW, EST_SHIFT) VALUES
+('2026-01-27 06:00:00', '2026-01-28 04:00:00', 3, 590, 560, 23, 13),
+('2026-01-27 12:00:00', '2026-01-28 08:00:00', 1, 530, 500, 21, 11);
+
+-- January 28, 2026
+INSERT INTO argo_visit_details (eta, etd, service, EST_DISCHARGE, EST_LOAD, EST_RESTOW, EST_SHIFT) VALUES
+('2026-01-28 08:00:00', '2026-01-29 06:00:00', 4, 610, 580, 24, 14),
+('2026-01-28 14:00:00', '2026-01-29 10:00:00', 2, 490, 510, 18, 10);
+
+-- January 29, 2026
+INSERT INTO argo_visit_details (eta, etd, service, EST_DISCHARGE, EST_LOAD, EST_RESTOW, EST_SHIFT) VALUES
+('2026-01-29 10:00:00', '2026-01-30 08:00:00', 5, 570, 540, 22, 12),
+('2026-01-29 16:00:00', '2026-01-30 12:00:00', 3, 500, 480, 19, 9);
+
+-- January 30, 2026
+INSERT INTO argo_visit_details (eta, etd, service, EST_DISCHARGE, EST_LOAD, EST_RESTOW, EST_SHIFT) VALUES
+('2026-01-30 06:00:00', '2026-01-31 04:00:00', 1, 640, 610, 26, 15),
+('2026-01-30 12:00:00', '2026-01-31 10:00:00', 4, 510, 530, 20, 10);
+
+-- January 31, 2026
+INSERT INTO argo_visit_details (eta, etd, service, EST_DISCHARGE, EST_LOAD, EST_RESTOW, EST_SHIFT) VALUES
+('2026-01-31 08:00:00', '2026-02-01 06:00:00', 2, 580, 550, 23, 13),
+('2026-01-31 14:00:00', '2026-02-01 12:00:00', 5, 520, 490, 21, 11);
+
+-- February 1, 2026
+INSERT INTO argo_visit_details (eta, etd, service, EST_DISCHARGE, EST_LOAD, EST_RESTOW, EST_SHIFT) VALUES
+('2026-02-01 10:00:00', '2026-02-02 08:00:00', 3, 600, 570, 25, 14),
+('2026-02-01 16:00:00', '2026-02-02 14:00:00', 1, 530, 500, 22, 12);
+
+-- February 2, 2026
+INSERT INTO argo_visit_details (eta, etd, service, EST_DISCHARGE, EST_LOAD, EST_RESTOW, EST_SHIFT) VALUES
+('2026-02-02 06:00:00', '2026-02-03 04:00:00', 4, 710, 690, 30, 20),
+('2026-02-02 12:00:00', '2026-02-03 10:00:00', 2, 550, 520, 24, 13);
+
+-- February 3, 2026
+INSERT INTO argo_visit_details (eta, etd, service, EST_DISCHARGE, EST_LOAD, EST_RESTOW, EST_SHIFT) VALUES
+('2026-02-03 08:00:00', '2026-02-04 06:00:00', 5, 620, 590, 27, 16),
+('2026-02-03 14:00:00', '2026-02-04 12:00:00', 3, 540, 510, 23, 12);
+
+-- Additional 2026 visits - February to March
+INSERT INTO argo_visit_details (eta, etd, service, EST_DISCHARGE, EST_LOAD, EST_RESTOW, EST_SHIFT) VALUES
 ('2026-02-05 10:00:00', '2026-02-06 08:00:00', 4, 550, 570, 22, 12),
 ('2026-02-10 12:00:00', '2026-02-11 10:00:00', 5, 480, 500, 20, 8),
 ('2026-02-15 16:00:00', '2026-02-16 14:00:00', 1, 650, 620, 28, 16),
@@ -297,44 +341,70 @@ INSERT INTO argo_carrier_visit (id, carrier_mode, phase, ata, atd, cvcvd_gkey) V
 ('TNG_JAN12', 'VESSEL', '60DEPARTED', '2026-01-12 08:00:00', '2026-01-13 06:00:00', 4),
 ('TNG_JAN15', 'VESSEL', '60DEPARTED', '2026-01-15 12:00:00', '2026-01-16 10:00:00', 5);
 
--- Current/Today's visits (using fixed dates for stability)
-INSERT INTO argo_carrier_visit (id, carrier_mode, phase, ata, atd, cvcvd_gkey) VALUES
-('TNG001', 'VESSEL', '40WORKING', '2026-01-23 08:00:00', NULL, 6),
-('TNG002', 'VESSEL', '30ARRIVED', '2026-01-23 14:00:00', NULL, 7);
-
 -- Recent completed visits
 INSERT INTO argo_carrier_visit (id, carrier_mode, phase, ata, atd, cvcvd_gkey) VALUES
-('TNG003', 'VESSEL', '60DEPARTED', '2026-01-21 06:00:00', '2026-01-22 04:00:00', 8),
-('TNG004', 'VESSEL', '50COMPLETE', '2026-01-22 10:00:00', '2026-01-23 06:00:00', 9);
+('TNG_JAN21', 'VESSEL', '60DEPARTED', '2026-01-21 06:00:00', '2026-01-22 04:00:00', 6),
+('TNG_JAN22', 'VESSEL', '60DEPARTED', '2026-01-22 10:00:00', '2026-01-23 06:00:00', 7),
+('TNG_JAN23', 'VESSEL', '60DEPARTED', '2026-01-23 08:00:00', '2026-01-24 02:00:00', 8);
 
--- Inbound visits
+-- Current/Today's visits (January 24, 2026)
 INSERT INTO argo_carrier_visit (id, carrier_mode, phase, ata, atd, cvcvd_gkey) VALUES
-('TNG005', 'VESSEL', '20INBOUND', NULL, NULL, 10),
-('TNG006', 'VESSEL', '20INBOUND', NULL, NULL, 11),
-('TNG007', 'VESSEL', '20INBOUND', NULL, NULL, 12);
+('TNG001', 'VESSEL', '40WORKING', '2026-01-24 06:00:00', NULL, 9),
+('TNG002', 'VESSEL', '40WORKING', '2026-01-24 12:00:00', NULL, 10),
+('TNG003', 'VESSEL', '30ARRIVED', '2026-01-24 18:00:00', NULL, 11);
 
--- Additional 2026 carrier visits - January to June
+-- Next 10 Days Visits (Jan 25 - Feb 3, 2026)
 INSERT INTO argo_carrier_visit (id, carrier_mode, phase, ata, atd, cvcvd_gkey) VALUES
-('TNG008', 'VESSEL', '20INBOUND', NULL, NULL, 13),
-('TNG009', 'VESSEL', '20INBOUND', NULL, NULL, 14),
-('TNG010', 'VESSEL', '20INBOUND', NULL, NULL, 15),
-('TNG011', 'VESSEL', '20INBOUND', NULL, NULL, 16),
-('TNG012', 'VESSEL', '20INBOUND', NULL, NULL, 17),
-('TNG013', 'VESSEL', '20INBOUND', NULL, NULL, 18),
-('TNG014', 'VESSEL', '20INBOUND', NULL, NULL, 19),
-('TNG015', 'VESSEL', '20INBOUND', NULL, NULL, 20),
-('TNG016', 'VESSEL', '20INBOUND', NULL, NULL, 21),
-('TNG017', 'VESSEL', '20INBOUND', NULL, NULL, 22),
-('TNG018', 'VESSEL', '20INBOUND', NULL, NULL, 23),
-('TNG019', 'VESSEL', '20INBOUND', NULL, NULL, 24),
-('TNG020', 'VESSEL', '20INBOUND', NULL, NULL, 25),
-('TNG021', 'VESSEL', '20INBOUND', NULL, NULL, 26),
-('TNG022', 'VESSEL', '20INBOUND', NULL, NULL, 27),
-('TNG023', 'VESSEL', '20INBOUND', NULL, NULL, 28),
-('TNG024', 'VESSEL', '20INBOUND', NULL, NULL, 29),
-('TNG025', 'VESSEL', '20INBOUND', NULL, NULL, 30),
-('TNG026', 'VESSEL', '20INBOUND', NULL, NULL, 31),
-('TNG027', 'VESSEL', '20INBOUND', NULL, NULL, 32);
+-- January 25
+('TNG_JAN25_01', 'VESSEL', '20INBOUND', NULL, NULL, 12),
+('TNG_JAN25_02', 'VESSEL', '20INBOUND', NULL, NULL, 13),
+-- January 26
+('TNG_JAN26_01', 'VESSEL', '20INBOUND', NULL, NULL, 14),
+('TNG_JAN26_02', 'VESSEL', '20INBOUND', NULL, NULL, 15),
+-- January 27
+('TNG_JAN27_01', 'VESSEL', '20INBOUND', NULL, NULL, 16),
+('TNG_JAN27_02', 'VESSEL', '20INBOUND', NULL, NULL, 17),
+-- January 28
+('TNG_JAN28_01', 'VESSEL', '20INBOUND', NULL, NULL, 18),
+('TNG_JAN28_02', 'VESSEL', '20INBOUND', NULL, NULL, 19),
+-- January 29
+('TNG_JAN29_01', 'VESSEL', '20INBOUND', NULL, NULL, 20),
+('TNG_JAN29_02', 'VESSEL', '20INBOUND', NULL, NULL, 21),
+-- January 30
+('TNG_JAN30_01', 'VESSEL', '20INBOUND', NULL, NULL, 22),
+('TNG_JAN30_02', 'VESSEL', '20INBOUND', NULL, NULL, 23),
+-- January 31
+('TNG_JAN31_01', 'VESSEL', '20INBOUND', NULL, NULL, 24),
+('TNG_JAN31_02', 'VESSEL', '20INBOUND', NULL, NULL, 25),
+-- February 1
+('TNG_FEB01_01', 'VESSEL', '20INBOUND', NULL, NULL, 26),
+('TNG_FEB01_02', 'VESSEL', '20INBOUND', NULL, NULL, 27),
+-- February 2
+('TNG_FEB02_01', 'VESSEL', '20INBOUND', NULL, NULL, 28),
+('TNG_FEB02_02', 'VESSEL', '20INBOUND', NULL, NULL, 29),
+-- February 3
+('TNG_FEB03_01', 'VESSEL', '20INBOUND', NULL, NULL, 30),
+('TNG_FEB03_02', 'VESSEL', '20INBOUND', NULL, NULL, 31);
+
+-- Additional 2026 carrier visits - February to June
+INSERT INTO argo_carrier_visit (id, carrier_mode, phase, ata, atd, cvcvd_gkey) VALUES
+('TNG_FEB05', 'VESSEL', '20INBOUND', NULL, NULL, 32),
+('TNG_FEB10', 'VESSEL', '20INBOUND', NULL, NULL, 33),
+('TNG_FEB15', 'VESSEL', '20INBOUND', NULL, NULL, 34),
+('TNG_FEB20', 'VESSEL', '20INBOUND', NULL, NULL, 35),
+('TNG_FEB25', 'VESSEL', '20INBOUND', NULL, NULL, 36),
+('TNG_MAR01', 'VESSEL', '20INBOUND', NULL, NULL, 37),
+('TNG_MAR05', 'VESSEL', '20INBOUND', NULL, NULL, 38),
+('TNG_APR03', 'VESSEL', '20INBOUND', NULL, NULL, 39),
+('TNG_APR08', 'VESSEL', '20INBOUND', NULL, NULL, 40),
+('TNG_APR15', 'VESSEL', '20INBOUND', NULL, NULL, 41),
+('TNG_APR22', 'VESSEL', '20INBOUND', NULL, NULL, 42),
+('TNG_APR28', 'VESSEL', '20INBOUND', NULL, NULL, 43),
+('TNG_MAY05', 'VESSEL', '20INBOUND', NULL, NULL, 44),
+('TNG_MAY12', 'VESSEL', '20INBOUND', NULL, NULL, 45),
+('TNG_MAY20', 'VESSEL', '20INBOUND', NULL, NULL, 46),
+('TNG_MAY27', 'VESSEL', '20INBOUND', NULL, NULL, 47),
+('TNG_JUN04', 'VESSEL', '20INBOUND', NULL, NULL, 48);
 
 -- Vessel Visit Details
 INSERT INTO vsl_vessel_visit_details (vvd_gkey, vessel_gkey, start_work, end_work, FLEX_DATE07) VALUES
@@ -344,58 +414,70 @@ INSERT INTO vsl_vessel_visit_details (vvd_gkey, vessel_gkey, start_work, end_wor
 (3, 10, '2026-01-08 14:30:00', '2026-01-09 09:45:00', '2026-01-08 16:00:00'), -- TNG_JAN08 - CMA CGM ATLAS
 (4, 11, '2026-01-12 08:30:00', '2026-01-13 05:45:00', '2026-01-12 10:00:00'), -- TNG_JAN12 - HAPAG NAVIGATOR
 (5, 12, '2026-01-15 12:30:00', '2026-01-16 09:45:00', '2026-01-15 14:00:00'), -- TNG_JAN15 - COSCO PRIDE
--- TNG001 - MSC MEDITERRANEAN (currently working)
-(6, 1, '2026-01-23 08:00:00', NULL, '2026-01-23 10:00:00'),
--- TNG002 - MAERSK ESSEX (arrived, not yet working)
-(7, 2, NULL, NULL, NULL),
--- TNG003 - CMA CGM TANGER (departed)
-(8, 3, '2026-01-21 06:00:00', '2026-01-22 04:00:00', '2026-01-21 08:00:00'),
--- TNG004 - HAPAG EXPRESS (complete)
-(9, 4, '2026-01-22 10:00:00', '2026-01-23 06:00:00', '2026-01-22 11:00:00'),
--- TNG005 - COSCO GLORY (inbound)
-(10, 5, NULL, NULL, NULL),
--- TNG006 - MSC FORTUNE (inbound)
-(11, 6, NULL, NULL, NULL),
--- TNG007 - MAERSK TANGOR (inbound)
-(12, 7, NULL, NULL, NULL),
--- Additional 2026 vessel visit details (rotating through vessels)
-(13, 1, NULL, NULL, NULL),  -- TNG008 - MSC MEDITERRANEAN
-(14, 3, NULL, NULL, NULL),  -- TNG009 - CMA CGM TANGER
-(15, 2, NULL, NULL, NULL), -- TNG010 - MAERSK ESSEX
-(16, 4, NULL, NULL, NULL), -- TNG011 - HAPAG EXPRESS
-(17, 5, NULL, NULL, NULL), -- TNG012 - COSCO GLORY
-(18, 1, NULL, NULL, NULL), -- TNG013 - MSC MEDITERRANEAN
-(19, 3, NULL, NULL, NULL), -- TNG014 - CMA CGM TANGER
-(20, 2, NULL, NULL, NULL), -- TNG015 - MAERSK ESSEX
-(21, 4, NULL, NULL, NULL), -- TNG016 - HAPAG EXPRESS
-(22, 5, NULL, NULL, NULL), -- TNG017 - COSCO GLORY
-(23, 1, NULL, NULL, NULL), -- TNG018 - MSC MEDITERRANEAN
-(24, 3, NULL, NULL, NULL), -- TNG019 - CMA CGM TANGER
-(25, 2, NULL, NULL, NULL), -- TNG020 - MAERSK ESSEX
-(26, 4, NULL, NULL, NULL), -- TNG021 - HAPAG EXPRESS
-(27, 5, NULL, NULL, NULL), -- TNG022 - COSCO GLORY
-(28, 8, NULL, NULL, NULL), -- TNG023 - MSC AURORA
-(29, 9, NULL, NULL, NULL), -- TNG024 - MAERSK VIKING
-(30, 10, NULL, NULL, NULL), -- TNG025 - CMA CGM ATLAS
-(31, 11, NULL, NULL, NULL), -- TNG026 - HAPAG NAVIGATOR
-(32, 12, NULL, NULL, NULL); -- TNG027 - COSCO PRIDE
+-- Recent completed visits
+(6, 3, '2026-01-21 06:00:00', '2026-01-22 04:00:00', '2026-01-21 08:00:00'),  -- TNG_JAN21 - CMA CGM TANGER
+(7, 4, '2026-01-22 10:00:00', '2026-01-23 06:00:00', '2026-01-22 11:00:00'),  -- TNG_JAN22 - HAPAG EXPRESS
+(8, 1, '2026-01-23 08:00:00', '2026-01-24 02:00:00', '2026-01-23 10:00:00'),  -- TNG_JAN23 - MSC MEDITERRANEAN
+-- Current/Today's visits (January 24, 2026) - currently working
+(9, 2, '2026-01-24 06:00:00', NULL, '2026-01-24 08:00:00'),   -- TNG001 - MAERSK ESSEX (working)
+(10, 5, '2026-01-24 12:00:00', NULL, '2026-01-24 14:00:00'),  -- TNG002 - COSCO GLORY (working)
+(11, 3, NULL, NULL, NULL),  -- TNG003 - CMA CGM TANGER (arrived, not working yet)
+-- Next 10 days (Jan 25 - Feb 3) - all inbound
+(12, 1, NULL, NULL, NULL),  -- TNG_JAN25_01 - MSC MEDITERRANEAN
+(13, 4, NULL, NULL, NULL),  -- TNG_JAN25_02 - HAPAG EXPRESS
+(14, 5, NULL, NULL, NULL),  -- TNG_JAN26_01 - COSCO GLORY
+(15, 2, NULL, NULL, NULL),  -- TNG_JAN26_02 - MAERSK ESSEX
+(16, 3, NULL, NULL, NULL),  -- TNG_JAN27_01 - CMA CGM TANGER
+(17, 1, NULL, NULL, NULL),  -- TNG_JAN27_02 - MSC MEDITERRANEAN
+(18, 4, NULL, NULL, NULL),  -- TNG_JAN28_01 - HAPAG EXPRESS
+(19, 2, NULL, NULL, NULL),  -- TNG_JAN28_02 - MAERSK ESSEX
+(20, 5, NULL, NULL, NULL),  -- TNG_JAN29_01 - COSCO GLORY
+(21, 3, NULL, NULL, NULL),  -- TNG_JAN29_02 - CMA CGM TANGER
+(22, 1, NULL, NULL, NULL),  -- TNG_JAN30_01 - MSC MEDITERRANEAN
+(23, 4, NULL, NULL, NULL),  -- TNG_JAN30_02 - HAPAG EXPRESS
+(24, 2, NULL, NULL, NULL),  -- TNG_JAN31_01 - MAERSK ESSEX
+(25, 5, NULL, NULL, NULL),  -- TNG_JAN31_02 - COSCO GLORY
+(26, 3, NULL, NULL, NULL),  -- TNG_FEB01_01 - CMA CGM TANGER
+(27, 1, NULL, NULL, NULL),  -- TNG_FEB01_02 - MSC MEDITERRANEAN
+(28, 4, NULL, NULL, NULL),  -- TNG_FEB02_01 - HAPAG EXPRESS
+(29, 2, NULL, NULL, NULL),  -- TNG_FEB02_02 - MAERSK ESSEX
+(30, 5, NULL, NULL, NULL),  -- TNG_FEB03_01 - COSCO GLORY
+(31, 3, NULL, NULL, NULL),  -- TNG_FEB03_02 - CMA CGM TANGER
+-- Additional 2026 vessel visit details (Feb 5 onwards)
+(32, 4, NULL, NULL, NULL),  -- TNG_FEB05 - HAPAG EXPRESS
+(33, 5, NULL, NULL, NULL),  -- TNG_FEB10 - COSCO GLORY
+(34, 1, NULL, NULL, NULL),  -- TNG_FEB15 - MSC MEDITERRANEAN
+(35, 3, NULL, NULL, NULL),  -- TNG_FEB20 - CMA CGM TANGER
+(36, 2, NULL, NULL, NULL),  -- TNG_FEB25 - MAERSK ESSEX
+(37, 4, NULL, NULL, NULL),  -- TNG_MAR01 - HAPAG EXPRESS
+(38, 5, NULL, NULL, NULL),  -- TNG_MAR05 - COSCO GLORY
+(39, 1, NULL, NULL, NULL),  -- TNG_APR03 - MSC MEDITERRANEAN
+(40, 3, NULL, NULL, NULL),  -- TNG_APR08 - CMA CGM TANGER
+(41, 2, NULL, NULL, NULL),  -- TNG_APR15 - MAERSK ESSEX
+(42, 4, NULL, NULL, NULL),  -- TNG_APR22 - HAPAG EXPRESS
+(43, 5, NULL, NULL, NULL),  -- TNG_APR28 - COSCO GLORY
+(44, 1, NULL, NULL, NULL),  -- TNG_MAY05 - MSC MEDITERRANEAN
+(45, 3, NULL, NULL, NULL),  -- TNG_MAY12 - CMA CGM TANGER
+(46, 2, NULL, NULL, NULL),  -- TNG_MAY20 - MAERSK ESSEX
+(47, 4, NULL, NULL, NULL),  -- TNG_MAY27 - HAPAG EXPRESS
+(48, 5, NULL, NULL, NULL);  -- TNG_JUN04 - COSCO GLORY
 
 -- Move Events with Crane assignments
--- TNG001 - MSC MEDITERRANEAN (450 discharge + 380 load = 830 moves, some executed)
+-- TNG001 - MAERSK ESSEX (520 discharge + 480 load = 1000 moves, some executed)
 -- Discharge moves with QC01, QC02, QC03
 INSERT INTO inv_move_event (move_kind, FM_pos_locid, TO_pos_locid, moved, container_id, che_fetch, t_discharge)
 SELECT
     'DSCH',
     'TNG001',
     CONCAT('YARD-A', FLOOR(1 + RAND() * 50)),
-    DATE_ADD('2026-01-23 08:00:00', INTERVAL FLOOR(RAND() * 3 * 60) MINUTE),
-    CONCAT('MSCU', LPAD(seq, 7, '0')),
+    DATE_ADD('2026-01-24 06:00:00', INTERVAL FLOOR(RAND() * 6 * 60) MINUTE),
+    CONCAT('MAEU', LPAD(seq, 7, '0')),
     CASE
         WHEN seq % 3 = 0 THEN 1
         WHEN seq % 3 = 1 THEN 2
         ELSE 3
     END,
-    DATE_ADD('2026-01-23 08:00:00', INTERVAL FLOOR(RAND() * 3 * 60) MINUTE)
+    DATE_ADD('2026-01-24 06:00:00', INTERVAL FLOOR(RAND() * 6 * 60) MINUTE)
 FROM (
     SELECT @row := @row + 1 as seq
     FROM (SELECT 0 UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3) t1,
@@ -413,14 +495,14 @@ SELECT
     'LOAD',
     CONCAT('YARD-B', FLOOR(1 + RAND() * 50)),
     'TNG001',
-    DATE_ADD('2026-01-23 08:00:00', INTERVAL FLOOR(RAND() * 3 * 60) MINUTE),
-    CONCAT('MSCU', LPAD(seq + 320, 7, '0')),
+    DATE_ADD('2026-01-24 06:00:00', INTERVAL FLOOR(RAND() * 6 * 60) MINUTE),
+    CONCAT('MAEU', LPAD(seq + 320, 7, '0')),
     CASE
         WHEN seq % 3 = 0 THEN 1
         WHEN seq % 3 = 1 THEN 2
         ELSE 3
     END,
-    DATE_ADD('2026-01-23 08:00:00', INTERVAL FLOOR(RAND() * 3 * 60) MINUTE)
+    DATE_ADD('2026-01-24 06:00:00', INTERVAL FLOOR(RAND() * 6 * 60) MINUTE)
 FROM (
     SELECT @row := @row + 1 as seq
     FROM (SELECT 0 UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3) t1,
@@ -565,16 +647,23 @@ INSERT INTO vsl_crane_statistics (vvd_gkey, crane_gkey, total_moves) VALUES
 (4, 5, 650), (4, 6, 650),  -- TNG_JAN12 - HAPAG NAVIGATOR
 (5, 1, 580), (5, 2, 580);  -- TNG_JAN15 - COSCO PRIDE
 
--- TNG001 - Currently Working (QC01, QC02, QC03)
+-- Recent completed visits crane statistics
 INSERT INTO vsl_crane_statistics (vvd_gkey, crane_gkey, total_moves) VALUES
-(6, 1, 190),
-(6, 2, 195),
-(6, 3, 185);
+(6, 1, 700), (6, 2, 700),  -- TNG_JAN21 - CMA CGM TANGER
+(7, 3, 410), (7, 4, 410),  -- TNG_JAN22 - HAPAG EXPRESS
+(8, 1, 380), (8, 2, 380);  -- TNG_JAN23 - MSC MEDITERRANEAN
 
--- TNG003 - Departed (QC01, QC02)
+-- Today's visits - Currently Working (Jan 24, 2026)
+-- TNG001 - MAERSK ESSEX (QC01, QC02, QC03)
 INSERT INTO vsl_crane_statistics (vvd_gkey, crane_gkey, total_moves) VALUES
-(8, 1, 700),
-(8, 2, 700);
+(9, 1, 180),
+(9, 2, 190),
+(9, 3, 175);
+
+-- TNG002 - COSCO GLORY (QC04, QC05)
+INSERT INTO vsl_crane_statistics (vvd_gkey, crane_gkey, total_moves) VALUES
+(10, 4, 160),
+(10, 5, 155);
 
 -- Crane Delays
 -- Historical delays from early January 2026
@@ -590,27 +679,34 @@ INSERT INTO vsl_crane_statistics_delays (cstat_gkey, crane_delay_type_gkey, dela
 (9, 2, '2026-01-15 13:45:00', 28, 'Stowage plan revision'),
 (10, 8, '2026-01-15 19:00:00', 22, 'Crane repositioning');
 
--- TNG001 delays
+-- Recent completed visits delays
+-- TNG_JAN21 - CMA CGM TANGER delays (QC01, QC02)
 INSERT INTO vsl_crane_statistics_delays (cstat_gkey, crane_delay_type_gkey, delay_date, time, notes) VALUES
--- QC01 delays
-(11, 1, '2026-01-23 08:45:00', 35, 'Spreader malfunction - maintenance required'),
-(11, 7, '2026-01-23 09:30:00', 15, 'Safety stop for personnel near crane'),
--- QC02 delays
-(12, 3, '2026-01-23 09:00:00', 42, 'Waiting for import containers to be positioned'),
-(12, 8, '2026-01-23 10:00:00', 28, 'Repositioning for different bay'),
--- QC03 delays
-(13, 2, '2026-01-23 08:30:00', 20, 'Operational delay - stowage plan revision');
+(11, 1, '2026-01-21 16:00:00', 125, 'Major hydraulic system failure'),
+(11, 3, '2026-01-21 22:00:00', 55, 'Waiting for cargo - vessel stowage issue'),
+(11, 4, '2026-01-22 00:00:00', 90, 'Heavy wind - operations suspended'),
+(12, 2, '2026-01-21 17:00:00', 45, 'Operational coordination delay'),
+(12, 6, '2026-01-21 20:00:00', 65, 'Power supply interruption'),
+(12, 5, '2026-01-22 02:00:00', 30, 'Labor shift change coordination');
 
--- TNG003 delays (historical)
+-- TNG_JAN23 - MSC MEDITERRANEAN delays (QC01, QC02)
 INSERT INTO vsl_crane_statistics_delays (cstat_gkey, crane_delay_type_gkey, delay_date, time, notes) VALUES
--- QC01 delays
-(14, 1, '2026-01-21 16:00:00', 125, 'Major hydraulic system failure'),
-(14, 3, '2026-01-21 22:00:00', 55, 'Waiting for cargo - vessel stowage issue'),
-(14, 4, '2026-01-22 00:00:00', 90, 'Heavy wind - operations suspended'),
--- QC02 delays
-(15, 2, '2026-01-21 17:00:00', 45, 'Operational coordination delay'),
-(15, 6, '2026-01-21 20:00:00', 65, 'Power supply interruption'),
-(15, 5, '2026-01-22 02:00:00', 30, 'Labor shift change coordination');
+(15, 1, '2026-01-23 10:00:00', 40, 'Spreader maintenance'),
+(16, 3, '2026-01-23 14:00:00', 35, 'Waiting for yard equipment');
+
+-- Today's visits delays (Jan 24, 2026)
+-- TNG001 - MAERSK ESSEX delays (QC01, QC02, QC03)
+INSERT INTO vsl_crane_statistics_delays (cstat_gkey, crane_delay_type_gkey, delay_date, time, notes) VALUES
+(17, 1, '2026-01-24 08:45:00', 35, 'Spreader malfunction - maintenance required'),
+(17, 7, '2026-01-24 10:30:00', 15, 'Safety stop for personnel near crane'),
+(18, 3, '2026-01-24 09:00:00', 42, 'Waiting for import containers to be positioned'),
+(18, 8, '2026-01-24 11:00:00', 28, 'Repositioning for different bay'),
+(19, 2, '2026-01-24 08:30:00', 20, 'Operational delay - stowage plan revision');
+
+-- TNG002 - COSCO GLORY delays (QC04, QC05)
+INSERT INTO vsl_crane_statistics_delays (cstat_gkey, crane_delay_type_gkey, delay_date, time, notes) VALUES
+(20, 4, '2026-01-24 13:30:00', 45, 'Weather delay - high winds'),
+(21, 2, '2026-01-24 15:00:00', 25, 'Operational coordination');
 
 -- Summary statistics
 SELECT '=== DATABASE SETUP COMPLETE ===' as '';

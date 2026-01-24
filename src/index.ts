@@ -96,6 +96,21 @@ const tools: Tool[] = [
     },
   },
   {
+    name: 'get_visits_by_date',
+    description:
+      'Get all vessel visits scheduled for a specific date at the terminal. Useful for answering questions like "what visits are at the terminal on January 26?" or "show me vessels arriving on 2026-01-27". Accepts dates in YYYY-MM-DD format.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        date: {
+          type: 'string',
+          description: 'The date in YYYY-MM-DD format (e.g., "2026-01-26")',
+        },
+      },
+      required: ['date'],
+    },
+  },
+  {
     name: 'get_vessel_productivity',
     description:
       'Get vessel productivity metrics including CMPH (Container Moves Per Hour) for a specific vessel. Returns total moves, working hours, and CMPH calculation.',
@@ -195,6 +210,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'get_visits_today': {
         const results = await executeQuery(QUERIES.VISITS_BY_TERMINAL);
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(results, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'get_visits_by_date': {
+        if (!args || typeof args !== 'object' || !('date' in args)) {
+          throw new Error('date is required in YYYY-MM-DD format');
+        }
+        const { date } = args as { date: string };
+        const results = await executeQuery(QUERIES.VISITS_BY_TERMINAL_DATE, [date]);
         return {
           content: [
             {

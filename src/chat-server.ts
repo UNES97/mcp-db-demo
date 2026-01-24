@@ -87,6 +87,23 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
+      name: 'get_visits_by_date',
+      description: 'Get all vessel visits scheduled for a specific date at the terminal. Useful for answering questions like "what visits are at the terminal on January 26?" or "show me vessels arriving on 2026-01-27". Accepts dates in YYYY-MM-DD format.',
+      parameters: {
+        type: 'object',
+        properties: {
+          date: {
+            type: 'string',
+            description: 'The date in YYYY-MM-DD format (e.g., "2026-01-26")',
+          },
+        },
+        required: ['date'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'get_vessel_productivity',
       description: 'Get vessel productivity metrics including CMPH (Container Moves Per Hour) for a specific vessel. Returns total moves, working hours, and CMPH calculation.',
       parameters: {
@@ -184,6 +201,9 @@ async function executeToolFunction(name: string, args: any): Promise<any> {
 
       case 'get_visits_today':
         return await executeQuery(QUERIES.VISITS_BY_TERMINAL);
+
+      case 'get_visits_by_date':
+        return await executeQuery(QUERIES.VISITS_BY_TERMINAL_DATE, [args.date]);
 
       case 'get_vessel_productivity':
         return await executeQuery(QUERIES.VESSEL_PRODUCTIVITY, [`%${args.vesselName}%`]);
