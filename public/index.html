@@ -244,6 +244,15 @@
                         style="max-height: 100px;"></textarea>
 
                     <button
+                        id="micButton"
+                        type="button"
+                        onclick="toggleVoice()"
+                        class="btn-icon btn-flat-orange min-w-[44px] min-h-[44px]"
+                        title="Voice input">
+                        <i data-lucide="mic" class="w-4 h-4" id="micIcon"></i>
+                    </button>
+
+                    <button
                         id="sendButton"
                         type="submit"
                         disabled
@@ -441,6 +450,16 @@
             stroke: #fff;
             stroke-width: 3;
             fill: none;
+        }
+
+        /* Voice recording indicator */
+        .mic-recording {
+            color: #ef4444 !important;
+            animation: micPulse 1s ease-in-out infinite;
+        }
+        @keyframes micPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
         }
 
         /* Loading bar */

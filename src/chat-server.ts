@@ -100,6 +100,18 @@ const TOOL_TTL: Record<string, number> = {
 const queryCache = new TTLCache<any>();       // Layer 1: DB query results
 const responseCache = new TTLCache<any>();     // Layer 2: full Claude responses
 
+// Response time + error tracking
+const responseTimes: number[] = [];
+const recentErrors: { time: string; message: string }[] = [];
+function recordResponseTime(ms: number) {
+  responseTimes.push(ms);
+  if (responseTimes.length > 100) responseTimes.shift();
+}
+function recordError(msg: string) {
+  recentErrors.push({ time: new Date().toISOString(), message: msg });
+  if (recentErrors.length > 20) recentErrors.shift();
+}
+
 // Normalize message to a cache key (lowercase, collapse whitespace, trim)
 function normalizeForCache(text: string): string {
   return text.toLowerCase().replace(/\s+/g, ' ').trim();
@@ -610,6 +622,7 @@ Reference actual data from your response. Keep under 60 chars each.`;
 
 // Chat endpoint
 app.post('/api/chat', async (req, res) => {
+  const startTime = Date.now();
   try {
     const { messages, conversationId } = req.body;
 
@@ -729,9 +742,11 @@ app.post('/api/chat', async (req, res) => {
       responseCache.set(responseCacheKey, { ...responsePayload, cached: true }, TTL.RESPONSE);
     }
 
+    recordResponseTime(Date.now() - startTime);
     res.json(responsePayload);
 
   } catch (error: any) {
+    recordError(error.message || 'Unknown error');
     console.error('Chat API error:', error);
     res.status(500).json({
       error: error.message || 'An error occurred processing your request'
@@ -965,12 +980,87 @@ app.delete('/api/conversations/:id', async (req, res) => {
   res.json({ status: 'deleted' });
 });
 
+// Feedback endpoint
+app.post('/api/feedback', async (req, res) => {
+  const { conversationId, messageId, rating } = req.body;
+  if (!messageId || ![1, -1].includes(rating)) {
+    return res.status(400).json({ error: 'messageId and rating (1 or -1) required' });
+  }
+  await chatHistory.saveFeedback(conversationId || 'anonymous', messageId, rating);
+  res.json({ status: 'ok' });
+});
+
 // Cache management
 app.delete('/api/cache', (req, res) => {
   queryCache.clear();
   responseCache.clear();
   console.log('🗑️  Cache cleared');
   res.json({ status: 'cleared' });
+});
+
+// Admin dashboard
+app.get('/admin', async (req, res) => {
+  const stats = await chatHistory.getStats();
+  const avgTime = responseTimes.length > 0
+    ? Math.round(responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length)
+    : 0;
+  const uptime = Math.round(process.uptime());
+  const uptimeStr = `${Math.floor(uptime/3600)}h ${Math.floor((uptime%3600)/60)}m`;
+
+  res.send(`<!DOCTYPE html><html><head><title>APMT Admin</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  @font-face { font-family:'Maersk Headline'; src:url('/fonts/maersk-fonts/Maersk Headline/Maersk Headline Webfonts/MaerskHeadline-Light.woff2') format('woff2'); font-weight:300; font-display:swap; }
+  @font-face { font-family:'Maersk Headline'; src:url('/fonts/maersk-fonts/Maersk Headline/Maersk Headline Webfonts/MaerskHeadline-Regular.woff2') format('woff2'); font-weight:400; font-display:swap; }
+  @font-face { font-family:'Maersk Headline'; src:url('/fonts/maersk-fonts/Maersk Headline/Maersk Headline Webfonts/MaerskHeadline-Bold.woff2') format('woff2'); font-weight:700; font-display:swap; }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Maersk Headline',system-ui,sans-serif;background:#f9fafb;color:#1a1a1a;padding:24px;max-width:900px;margin:0 auto}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:24px}
+  .card{background:#fff;border:1px solid #e5e7eb;padding:16px}
+  .card .label{font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:1.5px}
+  .card .value{font-size:22px;color:#003C71;margin-top:4px}
+  .card .sub{font-size:11px;color:#9ca3af;margin-top:2px}
+  .card .positive{color:#10b981}
+  .card .negative{color:#ef4444}
+  h1{font-size:16px;color:#003C71;font-weight:400;margin-bottom:4px}
+  h2{font-size:11px;color:#FF6B35;font-weight:400;text-transform:uppercase;letter-spacing:1.5px;margin:24px 0 8px}
+  .tag{font-size:10px;color:#FF6B35;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px}
+  table{width:100%;border-collapse:collapse;font-size:12px;background:#fff;border:1px solid #e5e7eb}
+  th{background:#003C71;color:#fff;padding:8px 12px;text-align:left;font-weight:400}
+  td{padding:6px 12px;border-bottom:1px solid #f3f4f6}
+  .empty{color:#9ca3af;font-size:12px;padding:12px}
+  .icon{display:inline-block;width:14px;height:14px;vertical-align:-2px;margin-right:4px}
+</style></head><body>
+<div class="tag">apmt</div>
+<h1>System Dashboard</h1>
+
+<h2>Overview</h2>
+<div class="grid">
+  <div class="card"><div class="label">Uptime</div><div class="value">${uptimeStr}</div></div>
+  <div class="card"><div class="label">Avg Response</div><div class="value">${avgTime > 0 ? (avgTime/1000).toFixed(1) + 's' : 'N/A'}</div><div class="sub">${responseTimes.length} samples</div></div>
+  <div class="card"><div class="label">Query Cache</div><div class="value">${queryCache.size}</div><div class="sub">entries</div></div>
+  <div class="card"><div class="label">Response Cache</div><div class="value">${responseCache.size}</div><div class="sub">entries</div></div>
+</div>
+
+<h2>Conversations</h2>
+<div class="grid">
+  <div class="card"><div class="label">Total Conversations</div><div class="value">${stats.totalConversations}</div></div>
+  <div class="card"><div class="label">Total Messages</div><div class="value">${stats.totalMessages}</div></div>
+  <div class="card"><div class="label">Positive Feedback</div><div class="value positive"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14zM7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/></svg>${stats.thumbsUp}</div></div>
+  <div class="card"><div class="label">Negative Feedback</div><div class="value negative"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3H10zM17 2h2.67A2.31 2.31 0 0122 4v7a2.31 2.31 0 01-2.33 2H17"/></svg>${stats.thumbsDown}</div></div>
+</div>
+
+<h2>Recent Response Times</h2>
+${responseTimes.length > 0 ? `<table><tr><th>#</th><th>Duration</th></tr>
+${responseTimes.slice(-10).reverse().map((t, i) => `<tr><td>${i+1}</td><td>${(t/1000).toFixed(1)}s</td></tr>`).join('')}
+</table>` : '<div class="empty">No responses recorded yet</div>'}
+
+<h2>Recent Errors</h2>
+${recentErrors.length > 0 ? `<table><tr><th>Time</th><th>Error</th></tr>
+${recentErrors.slice(-10).reverse().map(e => `<tr><td>${e.time.slice(11,19)}</td><td>${e.message}</td></tr>`).join('')}
+</table>` : '<div class="empty">No errors</div>'}
+
+</body></html>`);
 });
 
 // Start server

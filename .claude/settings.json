@@ -27,7 +27,9 @@
       "Bash(grep -c \"name: ''get_\" /Applications/MAMP/htdocs/AIs/mcp-db-demo/src/chat-server.ts)",
       "Bash(/Applications/MAMP/Library/bin/mysql --host=localhost --port=8889 --user=root --password=root -e \":*)",
       "Bash(/Applications/MAMP/Library/bin/mysql --host=localhost --port=8889 --user=root --password=root 2)",
-      "Bash(/dev/null:*)"
+      "Bash(/dev/null:*)",
+      "Bash(curl -s http://localhost:3000/admin)",
+      "Bash(npm start:*)"
     ],
     "additionalDirectories": [
       "/tmp"

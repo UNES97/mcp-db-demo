@@ -123,6 +123,13 @@ function addMessage(content, isUser = false) {
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/></svg>
                             Email
                         </button>
+                        <span class="flex-grow"></span>
+                        <button onclick="submitFeedback('${msgId}', 1, this)" title="Helpful" class="btn-flat btn-flat-orange feedback-btn" style="font-size:10px;">
+                            <i data-lucide="thumbs-up" class="w-3 h-3"></i>
+                        </button>
+                        <button onclick="submitFeedback('${msgId}', -1, this)" title="Not helpful" class="btn-flat btn-flat-orange feedback-btn" style="font-size:10px;">
+                            <i data-lucide="thumbs-down" class="w-3 h-3"></i>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -139,6 +146,9 @@ function addMessage(content, isUser = false) {
     }
 
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+    // Render Lucide icons in the new message
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 
     return messageDiv;
 }
@@ -786,6 +796,7 @@ async function sendMessage(message) {
 
         conversationHistory.push({ role: 'assistant', content: data.message });
         addMessage(data.message, false);
+        playChime();
 
         if (data.followups && data.followups.length > 0) {
             renderFollowups(data.followups);
@@ -1139,6 +1150,185 @@ function startOnboardingTour() {
 window.restartTour = function() {
     localStorage.removeItem('apmt-tour-done');
     startOnboardingTour();
+};
+
+// ─── Voice Input ────────────────────────────────────────────────────────────
+
+let recognition = null;
+let isRecording = false;
+
+// Terminal vocabulary corrections for speech recognition
+const TERM_CORRECTIONS = {
+    // Vessel-related
+    'faces': 'vessels', 'vessel\'s': 'vessels', 'wessels': 'vessels', 'vassals': 'vessels',
+    'facials': 'vessels', 'vases': 'vessels', 'fossils': 'vessels', 'feces': 'vessels',
+    'accident': 'active vessels', 'accidents': 'active vessels',
+    'active faces': 'active vessels', 'active vases': 'active vessels',
+    'active fossil': 'active vessels', 'active fossils': 'active vessels',
+    'axle vessels': 'active vessels', 'acted vessels': 'active vessels',
+    // Crane-related
+    'crane\'s': 'cranes', 'trains': 'cranes', 'canes': 'cranes', 'grains': 'cranes',
+    'queen': 'crane', 'queens': 'cranes',
+    // Terminal terms
+    'birth': 'berth', 'births': 'berths', 'burst': 'berth',
+    'dwell': 'dwell', 'jewel': 'dwell', 'dual': 'dwell',
+    'yard': 'yard', 'guard': 'yard',
+    'key pies': 'KPIs', 'kp eyes': 'KPIs', 'kp ice': 'KPIs', 'kpis': 'KPIs',
+    'sea mph': 'CMPH', 'cmph': 'CMPH', 'c mph': 'CMPH',
+    'tu\'s': 'TEUs', 'choose': 'TEUs', 'tools': 'TEUs', 'use': 'TEUs',
+    'delays': 'delays', 'the lays': 'delays', 'relays': 'delays',
+    'gate': 'gate', 'get': 'gate', 'gait': 'gate',
+    'moves': 'moves', 'moose': 'moves', 'news': 'moves',
+    'productivity': 'productivity', 'productive tea': 'productivity',
+    'turn around': 'turnaround', 'turn-around': 'turnaround',
+    'discharge': 'discharge', 'this charge': 'discharge',
+    'load': 'load', 'lode': 'load',
+    'inventory': 'inventory', 'in a tree': 'inventory',
+    'utilization': 'utilization', 'utilisation': 'utilization',
+    // Carriers
+    'mersk': 'maersk', 'mars': 'maersk', 'mask': 'maersk',
+    'msc': 'MSC', 'MSE': 'MSC',
+    'cosco': 'COSCO', 'costco': 'COSCO',
+    // Time
+    'today\'s': 'today\'s', 'todays': 'today\'s',
+    'this week\'s': 'this week\'s', 'last week\'s': 'last week\'s',
+    'terminal': 'terminal', 'terminals': 'terminal',
+    'overview': 'overview', 'over you': 'overview',
+    'equipment': 'equipment', 'equip mint': 'equipment',
+};
+
+// Full phrase corrections (checked first — catches mangled multi-word combos)
+const PHRASE_CORRECTIONS = [
+    [/show\s*(me\s*)?(the\s*)?accident/gi, 'show me the active vessels'],
+    [/active\s*(faces|vases|fossils|feces|basis)/gi, 'active vessels'],
+    [/terminal\s*(over\s*view|over\s*you|overview)/gi, 'terminal overview'],
+    [/crane\s*(the lays|relays|de lays)/gi, 'crane delays'],
+    [/vessel\s*(productive tea|productivity)/gi, 'vessel productivity'],
+    [/dwell\s*(time|thyme|tie)/gi, 'dwell time'],
+    [/gate\s*(active tea|activity|activities)/gi, 'gate activity'],
+    [/yard\s*(in\s*a\s*tree|inventory)/gi, 'yard inventory'],
+    [/truck\s*(turn\s*around|turnaround)/gi, 'truck turnaround'],
+    [/planned\s*(verse|vs|versus|first)\s*(executed|exec)/gi, 'planned vs executed'],
+    [/this\s*week\s*(verse|vs|versus|first)\s*last\s*week/gi, 'this week vs last week'],
+    [/compare\s*(this|the)\s*week/gi, 'compare this week'],
+    [/best\s*(and|in)\s*worst\s*(vessels|faces|fossils)/gi, 'best and worst vessels'],
+    [/berth\s*(utilization|utilisation|utilise)/gi, 'berth utilization'],
+    [/delay\s*(breakdown|break\s*down|brick\s*down)/gi, 'delay breakdown'],
+    [/sea\s*mph|see\s*mph|c\.?\s*m\.?\s*p\.?\s*h/gi, 'CMPH'],
+];
+
+function fixTerminalTerms(text) {
+    let fixed = text;
+
+    // Phase 1: full phrase corrections
+    for (const [pattern, replacement] of PHRASE_CORRECTIONS) {
+        fixed = fixed.replace(pattern, replacement);
+    }
+
+    // Phase 2: single word corrections (sort by length so longer matches first)
+    const entries = Object.entries(TERM_CORRECTIONS).sort((a, b) => b[0].length - a[0].length);
+    for (const [wrong, right] of entries) {
+        const regex = new RegExp('\\b' + wrong.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi');
+        fixed = fixed.replace(regex, right);
+    }
+
+    return fixed;
+}
+
+window.toggleVoice = function() {
+    if (isRecording) {
+        stopVoice();
+        return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        alert('Voice input is not supported in this browser. Use Chrome or Edge.');
+        return;
+    }
+
+    recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = true;
+    recognition.continuous = false;
+
+    const micBtn = document.getElementById('micButton');
+    micBtn.classList.add('mic-recording');
+    isRecording = true;
+    messageInput.placeholder = 'Listening...';
+
+    recognition.onresult = (event) => {
+        let transcript = '';
+        for (let i = 0; i < event.results.length; i++) {
+            transcript += event.results[i][0].transcript;
+        }
+        messageInput.value = fixTerminalTerms(transcript);
+        sendButton.disabled = !transcript.trim();
+    };
+
+    recognition.onend = () => {
+        stopVoice();
+        // Auto-send if we have text
+        if (messageInput.value.trim()) {
+            chatForm.dispatchEvent(new Event('submit'));
+        }
+    };
+
+    recognition.onerror = (event) => {
+        console.error('Speech error:', event.error);
+        stopVoice();
+    };
+
+    recognition.start();
+};
+
+function stopVoice() {
+    if (recognition) {
+        try { recognition.stop(); } catch(e) {}
+        recognition = null;
+    }
+    isRecording = false;
+    const micBtn = document.getElementById('micButton');
+    micBtn.classList.remove('mic-recording');
+    messageInput.placeholder = 'Ask about vessel visits, productivity metrics, schedules...';
+}
+
+// ─── Sound Notification ─────────────────────────────────────────────────────
+
+function playChime() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(660, ctx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.5);
+    } catch(e) {}
+}
+
+// ─── Response Feedback ──────────────────────────────────────────────────────
+
+window.submitFeedback = async function(msgId, rating, btn) {
+    const row = btn.closest('.flex');
+    const buttons = row.querySelectorAll('.feedback-btn');
+
+    buttons.forEach(b => { b.style.opacity = '0.3'; b.disabled = true; });
+    btn.style.opacity = '1';
+    btn.style.color = rating === 1 ? '#10b981' : '#ef4444';
+
+    try {
+        await fetch('/api/feedback', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ conversationId: currentConversationId, messageId: msgId, rating })
+        });
+    } catch(e) { console.error('Feedback error:', e); }
 };
 
 // ─── Initialize ─────────────────────────────────────────────────────────────

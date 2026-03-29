@@ -1,36 +1,17 @@
 FROM node:20-slim
 
-# Install build dependencies
-RUN apt-get update && apt-get install -y \
-    python3 \
-    make \
-    g++ \
-    && rm -rf /var/lib/apt/lists/*
-
 WORKDIR /app
 
-# Copy package files
+# Copy package files and install dependencies
 COPY package*.json ./
-
-# Install ALL dependencies (needed for build)
-# Use --ignore-scripts to skip the prepare script (which needs source code)
 RUN npm ci --ignore-scripts
 
-# Copy application code
+# Copy source and build
 COPY . .
-
-# Build TypeScript, then remove dev dependencies
-RUN npm run build && \
-    npm prune --omit=dev
-
-# Clean up build tools to reduce image size
-RUN apt-get purge -y python3 make g++ && \
-    apt-get autoremove -y && \
-    rm -rf /var/lib/apt/lists/*
+RUN npm run build && npm prune --omit=dev
 
 # Create non-root user
 RUN useradd -m -u 1001 nodejs && chown -R nodejs:nodejs /app
-
 USER nodejs
 
 EXPOSE 3000

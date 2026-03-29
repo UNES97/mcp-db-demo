@@ -38,6 +38,13 @@ async function getDb(): Promise<SqlJsDatabase> {
       created_at TEXT DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS idx_messages_conv ON messages(conversation_id);
+    CREATE TABLE IF NOT EXISTS feedback (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      conversation_id TEXT NOT NULL,
+      message_id TEXT NOT NULL,
+      rating INTEGER NOT NULL,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
   `);
 
   return db;
@@ -98,6 +105,29 @@ export async function getMessages(conversationId: string): Promise<any[]> {
 export async function deleteConversation(conversationId: string): Promise<void> {
   const d = await getDb();
   d.run('DELETE FROM messages WHERE conversation_id = ?', [conversationId]);
+  d.run('DELETE FROM feedback WHERE conversation_id = ?', [conversationId]);
   d.run('DELETE FROM conversations WHERE id = ?', [conversationId]);
   save();
+}
+
+export async function saveFeedback(conversationId: string, messageId: string, rating: number): Promise<void> {
+  const d = await getDb();
+  // Upsert: replace if same message already rated
+  d.run('DELETE FROM feedback WHERE conversation_id = ? AND message_id = ?', [conversationId, messageId]);
+  d.run('INSERT INTO feedback (conversation_id, message_id, rating) VALUES (?, ?, ?)', [conversationId, messageId, rating]);
+  save();
+}
+
+export async function getStats(): Promise<any> {
+  const d = await getDb();
+  const convos = d.exec('SELECT COUNT(*) FROM conversations');
+  const msgs = d.exec('SELECT COUNT(*) FROM messages');
+  const fbUp = d.exec('SELECT COUNT(*) FROM feedback WHERE rating = 1');
+  const fbDown = d.exec('SELECT COUNT(*) FROM feedback WHERE rating = -1');
+  return {
+    totalConversations: convos[0]?.values[0]?.[0] || 0,
+    totalMessages: msgs[0]?.values[0]?.[0] || 0,
+    thumbsUp: fbUp[0]?.values[0]?.[0] || 0,
+    thumbsDown: fbDown[0]?.values[0]?.[0] || 0,
+  };
 }
