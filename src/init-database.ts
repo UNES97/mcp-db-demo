@@ -32,14 +32,14 @@ export async function initializeDatabaseSchema(): Promise<void> {
     }
     await checkConn.end();
 
-    console.log('📦 Initializing database schema...');
+    console.log(`📦 Initializing database schema in "${dbName}"...`);
 
     // Try to increase max_allowed_packet (may fail without SUPER privilege — that's ok)
     const setupConn = await mysql.createConnection(connConfig);
     try {
       await setupConn.query('SET GLOBAL max_allowed_packet = 67108864');
     } catch (e) {
-      console.log('⚠ Could not SET GLOBAL max_allowed_packet (no SUPER privilege) — using session setting');
+      console.log('  (no SUPER privilege for SET GLOBAL — ok)');
     }
     await setupConn.end();
 
@@ -47,7 +47,14 @@ export async function initializeDatabaseSchema(): Promise<void> {
     try { await connection.query('SET SESSION max_allowed_packet = 67108864'); } catch (e) {}
 
     const sqlFilePath = path.join(__dirname, '../demo_database.sql');
-    const sqlContent = fs.readFileSync(sqlFilePath, 'utf8');
+    let sqlContent = fs.readFileSync(sqlFilePath, 'utf8');
+
+    // Strip any DROP DATABASE / CREATE DATABASE / USE statements
+    // (the connection already targets the correct database via DB_NAME)
+    sqlContent = sqlContent.replace(/DROP\s+DATABASE\s+.+?;/gi, '');
+    sqlContent = sqlContent.replace(/CREATE\s+DATABASE\s+.+?;/gi, '');
+    sqlContent = sqlContent.replace(/USE\s+\w+;/gi, '');
+
     await connection.query(sqlContent);
 
     // Shift all dates so the data is centered around today

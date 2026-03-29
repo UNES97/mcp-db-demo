@@ -7,14 +7,13 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-compass_db}
-      MYSQL_USER: ${MYSQL_USER:-apm_user}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-apm_password}
+      MYSQL_DATABASE: ${DB_NAME:-compass_db}
+      MYSQL_USER: ${DB_USER:-apm_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-apm_password}
     ports:
       - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./demo_database.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$${MYSQL_ROOT_PASSWORD:-root}"]
       interval: 10s
@@ -33,9 +32,9 @@ services:
       CHAT_SERVER_PORT: 3000
       DB_HOST: mysql
       DB_PORT: 3306
-      DB_USER: ${MYSQL_USER:-apm_user}
-      DB_PASSWORD: ${MYSQL_PASSWORD:-apm_password}
-      DB_NAME: ${MYSQL_DATABASE:-apm_terminal}
+      DB_USER: ${DB_USER:-apm_user}
+      DB_PASSWORD: ${DB_PASSWORD:-apm_password}
+      DB_NAME: ${DB_NAME:-compass_db}
       DB_CONNECTION_LIMIT: 10
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-sonnet-4-20250514}
