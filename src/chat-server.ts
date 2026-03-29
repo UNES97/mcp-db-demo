@@ -68,6 +68,7 @@ const TOOL_TTL: Record<string, number> = {
   get_yard_inventory_by_category:  TTL.SLOW,
   get_yard_inventory_by_block:     TTL.SLOW,
   get_dwell_time_by_category:      TTL.SLOW,
+  get_shift_handover:               TTL.LIVE,
   get_vessel_ranking:               TTL.LIVE,
   get_delay_breakdown:              TTL.LIVE,
   get_delay_by_vessel:              TTL.LIVE,
@@ -273,6 +274,11 @@ const tools: Anthropic.Tool[] = [
       type: 'object' as const,
       properties: {},
     },
+  },
+  {
+    name: 'get_shift_handover',
+    description: 'Get shift handover data for the last 8 hours. Returns vessel activity, total moves, delays, and gate stats for the shift. Use when asked for shift handover, shift report, or last 8 hours summary.',
+    input_schema: { type: 'object' as const, properties: {} },
   },
   {
     name: 'get_vessel_ranking',
@@ -493,6 +499,20 @@ async function executeToolFunctionRaw(name: string, args: any): Promise<any> {
       case 'get_crane_delays_by_crane':
         return await executeQuery(QUERIES.CRANE_DELAYS_BY_CRANE);
 
+      case 'get_shift_handover':
+        const [shVessels, shMoves, shDelays, shGate] = await Promise.all([
+          executeQuery(QUERIES.SHIFT_HANDOVER),
+          executeQuery(QUERIES.SHIFT_MOVES),
+          executeQuery(QUERIES.SHIFT_DELAYS),
+          executeQuery(QUERIES.SHIFT_GATE),
+        ]);
+        return {
+          vessels: shVessels[0] || {},
+          moves: shMoves[0] || {},
+          delays: shDelays,
+          gate: shGate[0] || {},
+        };
+
       case 'get_vessel_ranking':
         return await executeQuery(QUERIES.HQ_VESSEL_RANKING);
 
@@ -620,6 +640,22 @@ CHARTS: Include when data has 3+ comparable items:
 Types: bar, line, pie, doughnut, horizontalBar. Keep labels under 15 chars.
 
 COMPARISONS: Use side-by-side table (Metric | Period 1 | Period 2 | Change %) + grouped bar chart.
+
+SHIFT HANDOVER: When asked for shift handover/report, use get_shift_handover. Format as:
+- Shift period (last 8 hours with timestamps)
+- Vessels: arrived, departed, currently working
+- Moves: discharge, load, total
+- Delays: by category with minutes
+- Gate: transactions, turnaround
+- Key issues and pending items
+- Recommendations for next shift
+
+EXECUTIVE SUMMARY: When asked for executive summary/card/shareable, present a compact card:
+- Terminal name + date
+- 4 headline numbers (vessels, moves, CMPH, yard %)
+- Top performer + biggest concern (one line each)
+- Trend arrow (up/down vs last week)
+Keep it under 10 lines — designed to be screenshot-friendly.
 
 FOLLOW-UPS: End every response with:
 \`\`\`followups

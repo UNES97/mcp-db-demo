@@ -808,6 +808,20 @@ const LOADING_MESSAGES = {
         'Aggregating KPIs',
         'Building terminal dashboard',
     ],
+    shift: [
+        'Scanning last 8 hours of activity',
+        'Counting vessel arrivals and departures',
+        'Tallying container moves',
+        'Checking crane delays and issues',
+        'Compiling shift handover report',
+    ],
+    executive: [
+        'Pulling headline KPIs',
+        'Identifying top performer',
+        'Flagging key concerns',
+        'Comparing against last week',
+        'Building executive summary',
+    ],
     default: [
         'Connecting to terminal database',
         'Analyzing your question',
@@ -819,6 +833,8 @@ const LOADING_MESSAGES = {
 
 function detectLoadingCategory(message) {
     const m = message.toLowerCase();
+    if (m.includes('shift') || m.includes('handover') || m.includes('last 8 hours')) return 'shift';
+    if (m.includes('executive') || m.includes('summary card') || m.includes('shareable') || m.includes('sharing')) return 'executive';
     if (m.includes('overview') || m.includes('dashboard') || m.includes('everything')) return 'overview';
     if (m.includes('compare') || m.includes('vs') || m.includes('versus') || m.includes('week')) return 'compare';
     if (m.includes('delay') || m.includes('downtime') || m.includes('breakdown')) return 'delay';
@@ -1012,6 +1028,8 @@ function clearChat() {
             <button onclick="sendSuggestion('What are the main causes of crane delays this month?')" class="starter-btn"><i data-lucide="alert-triangle" class="w-4 h-4 text-apmt-orange-500"></i><span>What are the main causes of crane delays?</span></button>
             <button onclick="sendSuggestion('Are there any containers with unusually long dwell times in the yard?')" class="starter-btn"><i data-lucide="clock" class="w-4 h-4 text-apmt-orange-500"></i><span>Are containers staying too long in the yard?</span></button>
             <button onclick="sendSuggestion('Show me our best and worst performing vessels this month by CMPH')" class="starter-btn"><i data-lucide="trophy" class="w-4 h-4 text-apmt-orange-500"></i><span>Who are our best and worst performers?</span></button>
+            <button onclick="sendSuggestion('Generate a shift handover report for the last 8 hours')" class="starter-btn" style="border-color:#003C71;"><i data-lucide="clipboard-list" class="w-4 h-4 text-apm-500"></i><span>Generate shift handover report</span></button>
+            <button onclick="sendSuggestion('Create an executive summary card for today — key numbers, top performer, biggest concern, trend vs last week')" class="starter-btn" style="border-color:#003C71;"><i data-lucide="presentation" class="w-4 h-4 text-apm-500"></i><span>Executive summary for sharing</span></button>
         </div>
         <p class="text-[10px] text-gray-300 mt-6">Or just type your own question below</p>
     `;
@@ -1319,6 +1337,10 @@ const SUGGESTIONS = [
     { text: 'What happened with productivity yesterday?', category: 'Analysis' },
     { text: 'Why is the CMPH low for the current vessel?', category: 'Analysis' },
     { text: 'Show me all equipment and their status', category: 'Equipment' },
+    { text: 'Generate a shift handover report for the last 8 hours', category: 'Shift' },
+    { text: 'Create an executive summary card for today', category: 'Executive' },
+    { text: 'What happened during the last shift?', category: 'Shift' },
+    { text: 'Give me a shareable summary of today', category: 'Executive' },
 ];
 
 let typeaheadIndex = -1;

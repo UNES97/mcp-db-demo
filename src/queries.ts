@@ -759,6 +759,43 @@ export const QUERIES = {
     ORDER BY day DESC
   `,
 
+  // Shift handover: last 8 hours summary
+  SHIFT_HANDOVER: `
+    SELECT 'vessels' AS section,
+      (SELECT COUNT(*) FROM argo_carrier_visit WHERE phase IN ('30ARRIVED','40WORKING','50COMPLETE') AND ata >= DATE_SUB(NOW(), INTERVAL 8 HOUR)) AS arrived,
+      (SELECT COUNT(*) FROM argo_carrier_visit WHERE phase = '60DEPARTED' AND atd >= DATE_SUB(NOW(), INTERVAL 8 HOUR)) AS departed,
+      (SELECT COUNT(*) FROM argo_carrier_visit WHERE phase = '40WORKING') AS currently_working
+  `,
+
+  SHIFT_MOVES: `
+    SELECT
+      SUM(CASE WHEN move_kind = 'DSCH' THEN 1 ELSE 0 END) AS discharge,
+      SUM(CASE WHEN move_kind = 'LOAD' THEN 1 ELSE 0 END) AS load_moves,
+      COUNT(*) AS total
+    FROM inv_move_event
+    WHERE move_kind IN ('DSCH', 'LOAD')
+      AND COALESCE(t_fetch, t_put) >= DATE_SUB(NOW(), INTERVAL 8 HOUR)
+  `,
+
+  SHIFT_DELAYS: `
+    SELECT cdt.delay_category AS category, COUNT(*) AS count, SUM(csd.time) AS minutes
+    FROM vsl_crane_statistics_delays csd
+    JOIN ref_crane_delay_types cdt ON cdt.gkey = csd.crane_delay_type_gkey
+    WHERE csd.delay_date >= DATE_SUB(NOW(), INTERVAL 8 HOUR)
+    GROUP BY cdt.delay_category
+    ORDER BY minutes DESC
+  `,
+
+  SHIFT_GATE: `
+    SELECT
+      COUNT(*) AS transactions,
+      SUM(CASE WHEN sub_type LIKE 'R%' THEN 1 ELSE 0 END) AS receives,
+      SUM(CASE WHEN sub_type LIKE 'D%' THEN 1 ELSE 0 END) AS deliveries,
+      ROUND(AVG(TIMESTAMPDIFF(MINUTE, time_in, time_out)), 0) AS avg_turnaround
+    FROM road_truck_transactions
+    WHERE status = 'COMPLETE' AND COALESCE(time_in, time_out) >= DATE_SUB(NOW(), INTERVAL 8 HOUR)
+  `,
+
   KPI_ACTIVE_VESSELS: `
     SELECT COUNT(*) AS count
     FROM argo_carrier_visit acv
