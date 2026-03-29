@@ -27,27 +27,32 @@ export async function initializeDatabaseSchema(): Promise<void> {
       // If access denied on the DB, try without database to check if we can connect at all
       if (e.code === 'ER_DBACCESS_DENIED_ERROR') {
         console.log(`⚠ User "${baseConfig.user}" cannot access database "${dbName}"`);
-        console.log(`  Make sure MYSQL_DATABASE matches DB_NAME in your deployment config`);
 
-        // Try connecting without a database and create/use it
-        try {
-          const rootConn = await mysql.createConnection(baseConfig);
-          await rootConn.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
-          await rootConn.query(`GRANT ALL PRIVILEGES ON \`${dbName}\`.* TO '${baseConfig.user}'@'%'`);
-          await rootConn.query('FLUSH PRIVILEGES');
-          await rootConn.end();
-          console.log(`  Created database "${dbName}" and granted access`);
+        // Connect without database and find one we CAN access
+        const probeConn = await mysql.createConnection(baseConfig);
+        const [dbs]: any = await probeConn.query('SHOW DATABASES');
+        const available = dbs.map((r: any) => r.Database).filter((d: string) =>
+          !['information_schema', 'mysql', 'performance_schema', 'sys'].includes(d)
+        );
+        console.log(`  Available databases: ${available.join(', ') || 'none'}`);
+
+        if (available.length > 0) {
+          const useDb = available[0];
+          console.log(`  Using "${useDb}" instead`);
+          await probeConn.query(`USE \`${useDb}\``);
+          connConfig = { ...baseConfig, database: useDb };
+          await probeConn.end();
           connection = await mysql.createConnection(connConfig);
-        } catch (e2) {
-          // Can't create DB either — try connecting without specifying database
-          // Maybe the user has access but the DB doesn't exist yet
-          console.log(`  Trying to connect without specifying database...`);
-          connection = await mysql.createConnection(baseConfig);
+        } else {
+          // Try to create it
           try {
-            await connection.query(`USE \`${dbName}\``);
-          } catch (e3) {
-            console.error(`  Cannot access database "${dbName}". Check your MYSQL_DATABASE and DB_NAME env vars.`);
-            await connection.end();
+            await probeConn.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+            console.log(`  Created database "${dbName}"`);
+            await probeConn.end();
+            connection = await mysql.createConnection(connConfig);
+          } catch (e2) {
+            await probeConn.end();
+            console.error(`  No accessible database found. Set MYSQL_DATABASE=${dbName} on your MySQL service.`);
             throw e;
           }
         }
