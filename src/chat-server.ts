@@ -591,7 +591,14 @@ async function executeToolFunctionRaw(name: string, args: any): Promise<any> {
 // System prompt for Claude
 const SYSTEM_PROMPT = `APMT Terminal AI. Today: ${new Date().toISOString().slice(0, 10)}.
 
-RULES: Be direct. Use tools for data. Tables + charts for results. No narration.
+RULES: Be direct. Use tools for data. Tables + charts for results.
+
+INSIGHTS: After presenting data (tables/charts), ALWAYS add a "Key Insights" section with 2-4 bullet points analyzing the data:
+- Identify trends, anomalies, or notable patterns
+- Compare values to benchmarks or averages (e.g. "CMPH of 18.2 is below the 25 target")
+- Flag risks or concerns (e.g. "3 containers have dwell time exceeding 7 days")
+- Suggest actionable next steps when relevant
+Format as: **Key Insights** followed by bullet points. Be specific — reference actual values, vessel names, percentages from the data.
 
 IMPORTANT — TOOL SELECTION:
 - For weekly comparisons: use get_compare_weekly_* tools (one call, both periods)
@@ -756,20 +763,31 @@ app.post('/api/chat', async (req, res) => {
 
 // Streaming chat endpoint (SSE)
 app.post('/api/chat/stream', async (req, res) => {
+  const streamStart = Date.now();
   const { messages, conversationId } = req.body;
 
   if (!messages || !Array.isArray(messages)) {
     return res.status(400).json({ error: 'Messages array is required' });
   }
 
-  // SSE headers
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  res.flushHeaders();
+  // SSE setup
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache, no-transform',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no',
+  });
+  if (res.socket) {
+    res.socket.setNoDelay(true);
+    res.socket.setTimeout(0);
+  }
 
+  // Write SSE — pad small writes to exceed Node's internal buffer threshold
+  const PADDING = ' '.repeat(256);
   const sendSSE = (type: string, data: any) => {
-    res.write(`data: ${JSON.stringify({ type, ...data })}\n\n`);
+    if (aborted) return;
+    const payload = `data: ${JSON.stringify({ type, ...data })}\n\n`;
+    res.write(payload + `:${PADDING}\n\n`);
   };
 
   let aborted = false;
@@ -796,7 +814,10 @@ app.post('/api/chat/stream', async (req, res) => {
     let fullText = '';
     let continueLoop = true;
 
+    sendSSE('status', { message: 'connected' });
+
     while (continueLoop && !aborted) {
+      console.log('  Starting stream...');
       const stream = anthropic.messages.stream({
         model: process.env.CLAUDE_MODEL || 'claude-sonnet-4-20250514',
         max_tokens: 4096,
@@ -821,20 +842,24 @@ app.post('/api/chat/stream', async (req, res) => {
         );
 
         // Notify frontend which tools are running
-        sendSSE('tool_status', { tools: toolUseBlocks.map(t => t.name) });
+        const toolNames = toolUseBlocks.map(t => t.name);
+        sendSSE('tool_status', { tools: toolNames });
+        console.log(`  Tools: ${toolNames.join(', ')}`);
 
         claudeMessages.push({ role: 'assistant', content: finalMessage.content });
 
         const toolResults: Anthropic.ToolResultBlockParam[] = [];
         for (const toolUse of toolUseBlocks) {
           if (aborted) break;
-          console.log(`  Streaming tool: ${toolUse.name}`);
           const result = await executeToolFunction(toolUse.name, toolUse.input);
           toolResults.push({ type: 'tool_result', tool_use_id: toolUse.id, content: JSON.stringify(result) });
+          // Keep connection alive during tool execution
+          sendSSE('tool_progress', { tool: toolUse.name, status: 'done' });
         }
 
         claudeMessages.push({ role: 'user', content: toolResults });
         fullText = ''; // Reset — new stream will produce the full answer
+        sendSSE('tool_done', { tools: toolUseBlocks.map(t => t.name) });
       } else {
         continueLoop = false;
       }
@@ -865,10 +890,12 @@ app.post('/api/chat/stream', async (req, res) => {
       responseCache.set(responseCacheKey, { message: fullText, followups, usage: null, cached: true }, TTL.RESPONSE);
     }
 
+    recordResponseTime(Date.now() - streamStart);
     sendSSE('done', { followups, usage: null, cached: false });
     res.end();
 
   } catch (error: any) {
+    recordError(error.message || 'Stream error');
     if (!aborted) {
       sendSSE('error', { message: error.message || 'An error occurred' });
       res.end();
@@ -988,6 +1015,25 @@ app.post('/api/feedback', async (req, res) => {
   }
   await chatHistory.saveFeedback(conversationId || 'anonymous', messageId, rating);
   res.json({ status: 'ok' });
+});
+
+// Annotations
+app.post('/api/annotations', async (req, res) => {
+  const { messageId, author, text } = req.body;
+  if (!messageId || !text) return res.status(400).json({ error: 'messageId and text required' });
+  await chatHistory.addAnnotation(messageId, author || 'User', text);
+  const annotations = await chatHistory.getAnnotations(messageId);
+  res.json(annotations);
+});
+
+app.get('/api/annotations/:messageId', async (req, res) => {
+  const annotations = await chatHistory.getAnnotations(req.params.messageId);
+  res.json(annotations);
+});
+
+app.delete('/api/annotations/:id', async (req, res) => {
+  await chatHistory.deleteAnnotation(parseInt(req.params.id));
+  res.json({ status: 'deleted' });
 });
 
 // Cache management

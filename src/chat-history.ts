@@ -45,6 +45,13 @@ async function getDb(): Promise<SqlJsDatabase> {
       rating INTEGER NOT NULL,
       created_at TEXT DEFAULT (datetime('now'))
     );
+    CREATE TABLE IF NOT EXISTS annotations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      message_id TEXT NOT NULL,
+      author TEXT NOT NULL DEFAULT 'User',
+      text TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
   `);
 
   return db;
@@ -115,6 +122,28 @@ export async function saveFeedback(conversationId: string, messageId: string, ra
   // Upsert: replace if same message already rated
   d.run('DELETE FROM feedback WHERE conversation_id = ? AND message_id = ?', [conversationId, messageId]);
   d.run('INSERT INTO feedback (conversation_id, message_id, rating) VALUES (?, ?, ?)', [conversationId, messageId, rating]);
+  save();
+}
+
+export async function addAnnotation(messageId: string, author: string, text: string): Promise<void> {
+  const d = await getDb();
+  d.run('INSERT INTO annotations (message_id, author, text) VALUES (?, ?, ?)', [messageId, author, text]);
+  save();
+}
+
+export async function getAnnotations(messageId: string): Promise<any[]> {
+  const d = await getDb();
+  const stmt = d.prepare('SELECT id, author, text, created_at FROM annotations WHERE message_id = ? ORDER BY id ASC');
+  stmt.bind([messageId]);
+  const results: any[] = [];
+  while (stmt.step()) results.push(stmt.getAsObject());
+  stmt.free();
+  return results;
+}
+
+export async function deleteAnnotation(id: number): Promise<void> {
+  const d = await getDb();
+  d.run('DELETE FROM annotations WHERE id = ?', [id]);
   save();
 }
 

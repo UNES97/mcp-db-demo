@@ -31,7 +31,17 @@
       "Bash(curl -s http://localhost:3000/admin)",
       "Bash(npm start:*)",
       "Bash(/Applications/MAMP/Library/bin/mysql --host=localhost --port=8889 --user=root --password=root compass_db -e \":*)",
-      "Bash(/Applications/MAMP/Library/bin/mysql --host=localhost --port=8889 --user=root --password=root -e \"DROP DATABASE IF EXISTS compass_db; CREATE DATABASE compass_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\")"
+      "Bash(/Applications/MAMP/Library/bin/mysql --host=localhost --port=8889 --user=root --password=root -e \"DROP DATABASE IF EXISTS compass_db; CREATE DATABASE compass_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\")",
+      "Bash(curl -s -X POST http://localhost:3000/api/chat/stream -H \"Content-Type: application/json\" -d '{\"\"\"\"messages\"\"\"\":[{\"\"\"\"role\"\"\"\":\"\"\"\"user\"\"\"\",\"\"\"\"content\"\"\"\":\"\"\"\"how many vessels today?\"\"\"\"}]}' --max-time 30)",
+      "Bash(curl -s -N -X POST http://localhost:3000/api/chat/stream -H \"Content-Type: application/json\" -d '{\"\"\"\"messages\"\"\"\":[{\"\"\"\"role\"\"\"\":\"\"\"\"user\"\"\"\",\"\"\"\"content\"\"\"\":\"\"\"\"how many vessels today?\"\"\"\"}]}' --max-time 20)",
+      "Bash(curl -s -N -X POST http://localhost:3000/api/chat/stream -H \"Content-Type: application/json\" -d '{\"\"\"\"messages\"\"\"\":[{\"\"\"\"role\"\"\"\":\"\"\"\"user\"\"\"\",\"\"\"\"content\"\"\"\":\"\"\"\"how many vessels today?\"\"\"\"}]}' --max-time 30)",
+      "Bash(timeout 25 curl -s -N -X POST http://localhost:3000/api/chat/stream -H \"Content-Type: application/json\" -d '{\"\"\"\"messages\"\"\"\":[{\"\"\"\"role\"\"\"\":\"\"\"\"user\"\"\"\",\"\"\"\"content\"\"\"\":\"\"\"\"how many vessels today?\"\"\"\"}]}')",
+      "Bash(curl -s -N -X POST http://localhost:3000/api/chat/stream -H \"Content-Type: application/json\" -d '{\"\"messages\"\":[{\"\"role\"\":\"\"user\"\",\"\"content\"\":\"\"how many vessels today?\"\"}]}' --max-time 25)",
+      "Bash(curl -s -N -X POST http://localhost:3000/api/chat/stream -H \"Content-Type: application/json\" -d '{\"\"\"\"messages\"\"\"\":[{\"\"\"\"role\"\"\"\":\"\"\"\"user\"\"\"\",\"\"\"\"content\"\"\"\":\"\"\"\"hello\"\"\"\"}]}' --max-time 15)",
+      "Bash(time curl:*)",
+      "Bash(curl -s -N -X POST http://localhost:3000/api/chat/stream -H \"Content-Type: application/json\" -d '{\"\"\"\"messages\"\"\"\":[{\"\"\"\"role\"\"\"\":\"\"\"\"user\"\"\"\",\"\"\"\"content\"\"\"\":\"\"\"\"hello\"\"\"\"}]}' --max-time 30)",
+      "Bash(curl -s -N -X POST http://localhost:3000/api/chat/stream -H \"Content-Type: application/json\" -d '{\"\"\"\"messages\"\"\"\":[{\"\"\"\"role\"\"\"\":\"\"\"\"user\"\"\"\",\"\"\"\"content\"\"\"\":\"\"\"\"hello\"\"\"\"}]}' --max-time 45)",
+      "Bash(cat /private/tmp/claude-501/-Applications-MAMP-htdocs-AIs-mcp-db-demo/*/tasks/*.output)"
     ],
     "additionalDirectories": [
       "/tmp"

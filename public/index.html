@@ -155,86 +155,53 @@
 
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 h-[calc(100vh-220px)] sm:h-[calc(100vh-260px)] flex flex-col transition-colors">
 
-            <!-- Quick Queries -->
-            <div id="quickQueries" class="border-b border-gray-100 py-2 sm:py-2.5 relative">
-                <div class="query-fade-left"><div class="scroll-arrow" onclick="scrollQueries(-1)"><svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg></div></div>
-                <div class="query-fade-right"><div class="scroll-arrow" onclick="scrollQueries(1)"><svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></div></div>
-                <div id="queryScroll" class="flex items-center gap-2 overflow-x-auto hide-scrollbar px-3 sm:px-6">
-
-                    <button onclick="sendSuggestion('Show me the full terminal overview for today')"
-                            class="query-btn query-btn-primary query-btn-breathe"><i data-lucide="star" class="w-3 h-3"></i><i data-lucide="layout-dashboard" class="w-3 h-3"></i>Terminal Overview</button>
-
-                    <span class="flex-shrink-0 text-[10px] font-normal text-apmt-orange-500 uppercase tracking-widest">Quay</span>
-                    <button onclick="sendSuggestion('What visits are at the terminal today?')"
-                            class="query-btn"><i data-lucide="ship" class="w-3 h-3"></i>Today's visits</button>
-                    <button onclick="sendSuggestion('Show today\'s vessel visits with planned vs executed moves as a chart')"
-                            class="query-btn"><i data-lucide="bar-chart-3" class="w-3 h-3"></i>Planned vs Executed</button>
-                    <button onclick="sendSuggestion('Show today\'s vessel productivity KPIs (CMPH) with a chart')"
-                            class="query-btn"><i data-lucide="trending-up" class="w-3 h-3"></i>Productivity</button>
-                    <button onclick="sendSuggestion('Show a breakdown of today\'s vessel visits by phase as a pie chart')"
-                            class="query-btn"><i data-lucide="pie-chart" class="w-3 h-3"></i>By Phase</button>
-                    <button onclick="sendSuggestion('Show today\'s total moves and port hours per vessel as a chart')"
-                            class="query-btn"><i data-lucide="gauge" class="w-3 h-3"></i>KPIs</button>
-
-                    <span class="flex-shrink-0 text-[10px] font-normal text-apmt-orange-500 uppercase tracking-widest ml-1">Yard</span>
-                    <button onclick="sendSuggestion('Show current yard inventory by category with a chart')"
-                            class="query-btn"><i data-lucide="container" class="w-3 h-3"></i>Inventory</button>
-                    <button onclick="sendSuggestion('Show yard inventory by block with a chart')"
-                            class="query-btn"><i data-lucide="layout-grid" class="w-3 h-3"></i>Blocks</button>
-                    <button onclick="sendSuggestion('Show dwell time by category with a chart')"
-                            class="query-btn"><i data-lucide="clock" class="w-3 h-3"></i>Dwell Time</button>
-
-                    <span class="flex-shrink-0 text-[10px] font-normal text-apmt-orange-500 uppercase tracking-widest ml-1">Gate</span>
-                    <button onclick="sendSuggestion('Show today\'s gate activity summary with a chart')"
-                            class="query-btn"><i data-lucide="log-in" class="w-3 h-3"></i>Activity</button>
-                    <button onclick="sendSuggestion('Show today\'s truck turnaround times')"
-                            class="query-btn"><i data-lucide="truck" class="w-3 h-3"></i>Turnaround</button>
-
-                    <span class="flex-shrink-0 text-[10px] font-normal text-apmt-orange-500 uppercase tracking-widest ml-1">Equip</span>
-                    <button onclick="sendSuggestion('Show all active terminal equipment by type with a chart')"
-                            class="query-btn"><i data-lucide="cog" class="w-3 h-3"></i>Fleet</button>
-                    <button onclick="sendSuggestion('Show crane delays summary with a chart')"
-                            class="query-btn"><i data-lucide="alert-triangle" class="w-3 h-3"></i>Delays</button>
-
-                    <span class="flex-shrink-0 text-[10px] font-normal text-apmt-orange-500 uppercase tracking-widest ml-1">Compare</span>
-                    <button onclick="sendCompare('moves')" class="query-btn"><i data-lucide="columns" class="w-3 h-3"></i>Moves: Week vs Week</button>
-                    <button onclick="sendCompare('productivity')" class="query-btn"><i data-lucide="git-compare" class="w-3 h-3"></i>Productivity: Week vs Week</button>
-                    <button onclick="sendCompare('delays')" class="query-btn"><i data-lucide="git-compare" class="w-3 h-3"></i>Delays: Week vs Week</button>
-
-                    <span class="flex-shrink-0 text-[10px] font-normal text-apmt-orange-500 uppercase tracking-widest ml-1">HQ</span>
-                    <button onclick="sendSuggestion('What is our average vessel CMPH this month and how does it compare to target of 25 CMPH?')"
-                            class="query-btn"><i data-lucide="target" class="w-3 h-3"></i>CMPH vs Target</button>
-                    <button onclick="sendSuggestion('Which vessels had the most crane delays this month and what were the root causes?')"
-                            class="query-btn"><i data-lucide="search" class="w-3 h-3"></i>Delay Root Causes</button>
-                    <button onclick="sendSuggestion('Show yard dwell time trends - are containers staying too long? Which categories are worst?')"
-                            class="query-btn"><i data-lucide="hourglass" class="w-3 h-3"></i>Dwell Analysis</button>
-                    <button onclick="sendSuggestion('What is our berth utilization? How many vessels can we handle per day based on current throughput?')"
-                            class="query-btn"><i data-lucide="anchor" class="w-3 h-3"></i>Berth Utilization</button>
-                    <button onclick="sendSuggestion('Show the top 5 best and worst performing vessels by CMPH this month with analysis')"
-                            class="query-btn"><i data-lucide="trophy" class="w-3 h-3"></i>Best/Worst Vessels</button>
-                    <button onclick="sendSuggestion('What percentage of our total delay time is caused by equipment failures vs weather vs vessel issues?')"
-                            class="query-btn"><i data-lucide="percent" class="w-3 h-3"></i>Delay Breakdown %</button>
-                    <button onclick="sendSuggestion('Give me a gate throughput analysis - are we hitting capacity? What is the peak hour pattern?')"
-                            class="query-btn"><i data-lucide="activity" class="w-3 h-3"></i>Gate Throughput</button>
-                </div>
-            </div>
-
             <!-- Messages Container -->
             <div id="messages" class="flex-1 overflow-y-auto p-3 sm:p-6">
 
-                <!-- Welcome Message -->
-                <div id="welcomeMessage" class="flex flex-col items-center justify-center h-full">
-                    <div class="text-center px-4">
-                        <p class="text-[10px] text-apmt-orange-500 tracking-widest uppercase mb-2">apmt ai assistant</p>
-                        <h2 class="text-lg sm:text-xl font-normal text-apm-500 mb-1">What can I look up?</h2>
-                        <p class="text-xs sm:text-sm text-gray-400">Vessel operations, yard inventory, gate activity, equipment KPIs</p>
+                <!-- Welcome Screen -->
+                <div id="welcomeMessage" class="flex flex-col items-center justify-center h-full max-w-2xl mx-auto">
+                    <div class="text-center px-4 mb-8">
+                        <p class="text-[10px] text-apmt-orange-500 tracking-widest uppercase mb-3">apmt ai assistant</p>
+                        <h2 class="text-xl sm:text-2xl font-normal text-apm-500 mb-2">How can I help you today?</h2>
+                        <p class="text-xs sm:text-sm text-gray-400">Ask me anything about terminal operations in plain English</p>
                     </div>
+
+                    <!-- Conversation starters — phrased as natural questions -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full px-4 sm:px-0">
+                        <button onclick="sendSuggestion('Give me a full overview of the terminal today — vessels, moves, yard, gate, everything')" class="starter-btn">
+                            <i data-lucide="layout-dashboard" class="w-4 h-4 text-apmt-orange-500"></i>
+                            <span>Give me a full overview of the terminal today</span>
+                        </button>
+                        <button onclick="sendSuggestion('How are we performing this week compared to last week?')" class="starter-btn">
+                            <i data-lucide="git-compare" class="w-4 h-4 text-apmt-orange-500"></i>
+                            <span>How are we performing this week vs last week?</span>
+                        </button>
+                        <button onclick="sendSuggestion('Which vessels are at the terminal right now and what is their productivity?')" class="starter-btn">
+                            <i data-lucide="ship" class="w-4 h-4 text-apmt-orange-500"></i>
+                            <span>Which vessels are here and how productive are they?</span>
+                        </button>
+                        <button onclick="sendSuggestion('What are the main causes of crane delays this month?')" class="starter-btn">
+                            <i data-lucide="alert-triangle" class="w-4 h-4 text-apmt-orange-500"></i>
+                            <span>What are the main causes of crane delays?</span>
+                        </button>
+                        <button onclick="sendSuggestion('Are there any containers with unusually long dwell times in the yard?')" class="starter-btn">
+                            <i data-lucide="clock" class="w-4 h-4 text-apmt-orange-500"></i>
+                            <span>Are containers staying too long in the yard?</span>
+                        </button>
+                        <button onclick="sendSuggestion('Show me our best and worst performing vessels this month by CMPH')" class="starter-btn">
+                            <i data-lucide="trophy" class="w-4 h-4 text-apmt-orange-500"></i>
+                            <span>Who are our best and worst performers?</span>
+                        </button>
+                    </div>
+
+                    <p class="text-[10px] text-gray-300 mt-6">Or just type your own question below</p>
                 </div>
 
             </div>
 
             <!-- Input Area -->
-            <div class="border-t border-gray-200 bg-white px-3 sm:px-6 py-3 sm:py-4 transition-colors">
+            <div class="border-t border-gray-200 bg-white px-3 sm:px-6 py-3 sm:py-4 transition-colors relative">
+                <div id="typeahead" class="typeahead-dropdown hidden"></div>
                 <form id="chatForm" class="flex gap-2 sm:gap-3">
                     <textarea
                         id="messageInput"
@@ -452,6 +419,122 @@
             fill: none;
         }
 
+        /* Annotations */
+        .annotation-panel {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #f3f4f6;
+        }
+        .annotation-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 6px 0;
+            font-size: 11px;
+            border-bottom: 1px solid #fafafa;
+        }
+        .annotation-item:last-of-type { border-bottom: none; }
+        .annotation-author {
+            color: #FF6B35;
+            font-size: 10px;
+            white-space: nowrap;
+        }
+        .annotation-text { color: #4b5563; flex: 1; }
+        .annotation-time { color: #d1d5db; font-size: 9px; white-space: nowrap; }
+        .annotation-input {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+        }
+        .annotation-input input {
+            flex: 1;
+            padding: 5px 8px;
+            font-size: 11px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            outline: none;
+            font-family: 'Maersk Headline', sans-serif;
+        }
+        .annotation-input input:focus { border-color: #FF6B35; }
+
+        /* Drill-down clickable entities */
+        .drilldown {
+            color: #003C71;
+            border-bottom: 1px dashed #FF6B35;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .drilldown:hover {
+            color: #FF6B35;
+            border-bottom-style: solid;
+        }
+
+        /* Typeahead suggestions */
+        .typeahead-dropdown {
+            position: absolute;
+            bottom: 100%;
+            left: 12px;
+            right: 12px;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            box-shadow: 0 -4px 16px rgba(0,0,0,0.08);
+            max-height: 240px;
+            overflow-y: auto;
+            z-index: 10;
+        }
+        .typeahead-item {
+            padding: 10px 14px;
+            font-size: 12px;
+            color: #4b5563;
+            cursor: pointer;
+            border-bottom: 1px solid #f9fafb;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .typeahead-item:last-child { border-bottom: none; }
+        .typeahead-item:hover, .typeahead-item.active {
+            background: #FFF8F5;
+            color: #1a1a1a;
+        }
+        .typeahead-item .match {
+            color: #FF6B35;
+        }
+        .typeahead-category {
+            font-size: 9px;
+            color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 6px 14px 2px;
+        }
+
+        /* Conversation starter buttons */
+        .starter-btn {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px 14px;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            text-align: left;
+            font-size: 12px;
+            color: #4b5563;
+            cursor: pointer;
+            transition: all 0.15s;
+            line-height: 1.4;
+        }
+        .starter-btn:hover {
+            border-color: #FF6B35;
+            color: #1a1a1a;
+            background: #FFF8F5;
+        }
+        .starter-btn i {
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
         /* Voice recording indicator */
         .mic-recording {
             color: #ef4444 !important;
@@ -462,29 +545,26 @@
             50% { opacity: 0.4; }
         }
 
-        /* Loading bar */
-        .loading-bar {
-            width: 48px;
-            height: 3px;
-            background: #e5e7eb;
-            border-radius: 3px;
-            overflow: hidden;
-            position: relative;
+        /* Thinking dots — Claude-style */
+        .thinking-dots {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            padding-top: 6px;
         }
-        .loading-bar::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 50%;
-            height: 100%;
+        .thinking-dots span {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
             background: #FF6B35;
-            border-radius: 3px;
-            animation: loadingSlide 1.2s ease-in-out infinite;
+            animation: thinkPulse 1.4s ease-in-out infinite;
         }
-        @keyframes loadingSlide {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(200%); }
+        .thinking-dots span:nth-child(1) { animation-delay: 0s; }
+        .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes thinkPulse {
+            0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+            40% { opacity: 1; transform: scale(1.1); }
         }
 
         /* Quick query buttons */

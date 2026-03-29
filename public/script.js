@@ -123,6 +123,10 @@ function addMessage(content, isUser = false) {
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/></svg>
                             Email
                         </button>
+                        <button onclick="toggleAnnotations('${msgId}')" title="Add note" class="btn-flat btn-flat-orange" style="font-size:10px;">
+                            <i data-lucide="message-square-plus" class="w-3 h-3"></i>
+                            Note
+                        </button>
                         <span class="flex-grow"></span>
                         <button onclick="submitFeedback('${msgId}', 1, this)" title="Helpful" class="btn-flat btn-flat-orange feedback-btn" style="font-size:10px;">
                             <i data-lucide="thumbs-up" class="w-3 h-3"></i>
@@ -131,6 +135,7 @@ function addMessage(content, isUser = false) {
                             <i data-lucide="thumbs-down" class="w-3 h-3"></i>
                         </button>
                     </div>
+                    <div id="annotations-${msgId}" class="annotation-panel hidden"></div>
                 </div>
             </div>
         `;
@@ -441,7 +446,18 @@ function formatMessage(text) {
     text = text.replace(/\b(INBOUND|ARRIVED|WORKING|DEPARTED|COMPLETE|CLOSED|ACTIVE|SCHEDULED)\b/g,
         '<span class="inline-flex items-center px-2 py-0.5 bg-apm-50 text-apm-700 rounded font-medium text-xs uppercase tracking-wide">$1</span>');
 
-    // Step 12: Replace chart placeholders with actual HTML
+    // Step 12: Drill-down — make entity names clickable
+    // Visit IDs (V000086, etc)
+    text = text.replace(/\b(V\d{6})\b/g,
+        '<span class="drilldown" onclick="drillDown(\'Show me full details and crane performance for vessel visit $1\')" title="Click to drill down">$1</span>');
+    // Vessel names (2+ uppercase words like MAERSK EDINBURGH, MSC ANNA)
+    text = text.replace(/\b((?:MAERSK|MSC|CMA|COSCO|HAPAG|ONE|EVERGREEN|YANG|ZIM|PIL)\s+[A-Z][A-Z\s]{2,20}?)(?=[\s,<|])/g,
+        '<span class="drilldown" onclick="drillDown(\'Show me productivity, cranes, and delays for $1\')" title="Click to drill down">$1</span>');
+    // Crane names (Quay Crane 01, QC01, etc)
+    text = text.replace(/\b(Quay Crane \d{1,2}|QC\d{1,2})\b/g,
+        '<span class="drilldown" onclick="drillDown(\'Show me all moves and delays for $1\')" title="Click to drill down">$1</span>');
+
+    // Step 13: Replace chart placeholders with actual HTML
     charts.forEach((spec, idx) => {
         const specJson = JSON.stringify(spec).replace(/"/g, '&quot;');
         text = text.replace(
@@ -735,9 +751,91 @@ function renderFollowups(followups) {
 }
 
 // Show loading indicator
-function showLoading() {
-    // Hide welcome message when loading
+const LOADING_MESSAGES = {
+    vessel: [
+        'Querying vessel visit records',
+        'Checking berth allocations',
+        'Analyzing arrival and departure times',
+        'Calculating port stay durations',
+        'Preparing vessel summary',
+    ],
+    productivity: [
+        'Fetching move event data',
+        'Calculating container moves per hour',
+        'Benchmarking against targets',
+        'Ranking vessel performance',
+        'Preparing productivity analysis',
+    ],
+    crane: [
+        'Querying crane assignments',
+        'Analyzing crane move sequences',
+        'Checking twin lift ratios',
+        'Evaluating crane utilization',
+        'Preparing crane report',
+    ],
+    delay: [
+        'Scanning delay records',
+        'Categorizing delay causes',
+        'Calculating downtime impact',
+        'Identifying root causes',
+        'Preparing delay analysis',
+    ],
+    yard: [
+        'Scanning yard inventory',
+        'Counting TEUs by block',
+        'Checking reefer and hazmat units',
+        'Analyzing dwell times',
+        'Preparing yard snapshot',
+    ],
+    gate: [
+        'Querying gate transactions',
+        'Calculating truck turnaround times',
+        'Analyzing receive and delivery volumes',
+        'Identifying peak hour patterns',
+        'Preparing gate summary',
+    ],
+    compare: [
+        'Fetching this week data',
+        'Fetching last week data',
+        'Calculating period differences',
+        'Identifying significant changes',
+        'Preparing comparison report',
+    ],
+    overview: [
+        'Querying all terminal systems',
+        'Pulling vessel and crane data',
+        'Scanning yard and gate records',
+        'Aggregating KPIs',
+        'Building terminal dashboard',
+    ],
+    default: [
+        'Connecting to terminal database',
+        'Analyzing your question',
+        'Querying relevant data',
+        'Processing results',
+        'Preparing response',
+    ],
+};
+
+function detectLoadingCategory(message) {
+    const m = message.toLowerCase();
+    if (m.includes('overview') || m.includes('dashboard') || m.includes('everything')) return 'overview';
+    if (m.includes('compare') || m.includes('vs') || m.includes('versus') || m.includes('week')) return 'compare';
+    if (m.includes('delay') || m.includes('downtime') || m.includes('breakdown')) return 'delay';
+    if (m.includes('crane') || m.includes('qc') || m.includes('twin')) return 'crane';
+    if (m.includes('productivity') || m.includes('cmph') || m.includes('best') || m.includes('worst') || m.includes('perform')) return 'productivity';
+    if (m.includes('yard') || m.includes('inventory') || m.includes('dwell') || m.includes('teu') || m.includes('block')) return 'yard';
+    if (m.includes('gate') || m.includes('truck') || m.includes('turnaround')) return 'gate';
+    if (m.includes('vessel') || m.includes('visit') || m.includes('berth') || m.includes('ship')) return 'vessel';
+    return 'default';
+}
+
+let loadingInterval = null;
+let currentLoadingCategory = 'default';
+
+function showLoading(userMessage) {
     hideWelcomeMessage();
+    currentLoadingCategory = detectLoadingCategory(userMessage || '');
 
     const loadingDiv = document.createElement('div');
     loadingDiv.className = 'mb-4';
@@ -745,10 +843,15 @@ function showLoading() {
 
     loadingDiv.innerHTML = `
         <div class="max-w-[95%] sm:max-w-4xl">
-            <div class="bg-gray-50 border border-gray-200 rounded-2xl px-4 sm:px-5 py-3 sm:py-4 shadow-sm">
-                <div class="flex items-center gap-3">
-                    <div class="loading-bar"></div>
-                    <span class="text-xs text-gray-400">Retrieving data</span>
+            <div class="bg-gray-50 border border-gray-200 rounded-2xl px-4 sm:px-5 py-4 sm:py-5 shadow-sm">
+                <div class="flex items-start gap-3">
+                    <div class="thinking-dots">
+                        <span></span><span></span><span></span>
+                    </div>
+                    <div>
+                        <span class="text-sm text-gray-600 loading-text" style="transition:opacity 0.3s">${LOADING_MESSAGES[currentLoadingCategory][0]}</span>
+                        <div class="text-[10px] text-gray-300 mt-1 loading-sub">This may take a few seconds</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -757,15 +860,38 @@ function showLoading() {
     messagesContainer.appendChild(loadingDiv);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
+    // Rotate category-specific messages every 2.5 seconds
+    const msgs = LOADING_MESSAGES[currentLoadingCategory];
+    let msgIndex = 1;
+    loadingInterval = setInterval(() => {
+        const label = loadingDiv.querySelector('.loading-text');
+        if (!label) return;
+        label.style.opacity = '0';
+        setTimeout(() => {
+            label.textContent = msgs[msgIndex % msgs.length];
+            label.style.opacity = '1';
+            msgIndex++;
+        }, 300);
+    }, 2500);
+
     return loadingDiv;
 }
 
 // Remove loading indicator
 function removeLoading() {
+    if (loadingInterval) { clearInterval(loadingInterval); loadingInterval = null; }
     const loading = document.getElementById('loading-message');
     if (loading) {
         loading.remove();
     }
+}
+
+// Build the assistant message shell (reused by both streaming and non-streaming)
+function createAssistantShell(msgId) {
+    const div = document.createElement('div');
+    div.className = 'mb-4';
+    div.innerHTML = `<div class="max-w-[95%] sm:max-w-4xl"><div class="bg-gray-50 border border-gray-200 rounded-2xl px-4 sm:px-5 py-3 sm:py-4 shadow-sm"><div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-200/60 text-xs"><div class="flex items-center gap-2.5"><span class="inline-flex items-center gap-1 bg-apmt-orange-50 text-apmt-orange-500 text-[10px] tracking-widest uppercase px-2 py-0.5 rounded-md">apmt</span><span class="text-gray-400 text-xs">${formatTime()}</span></div><div class="flex items-center"><button onclick="expandMessage('${msgId}')" title="Expand" class="btn-icon btn-flat-orange"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 3h6m0 0v6m0-6L13 11M9 21H3m0 0v-6m0 6l8-8"/></svg></button><button onclick="exportMessage('${msgId}')" title="Export" class="btn-icon btn-flat-orange"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg></button></div></div><div id="${msgId}" class="prose prose-sm max-w-none text-gray-700 text-xs sm:text-sm msg-content leading-relaxed"></div><div class="flex items-center gap-1 mt-3 pt-2 border-t border-gray-200/60"><button onclick="expandMessage('${msgId}')" class="btn-flat btn-flat-orange" style="font-size:10px;"><svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 3h6m0 0v6m0-6L13 11M9 21H3m0 0v-6m0 6l8-8"/></svg> Expand</button><button onclick="exportMessage('${msgId}')" class="btn-flat btn-flat-orange" style="font-size:10px;"><svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg> Export</button><button onclick="openEmailModal('${msgId}')" class="btn-flat btn-flat-orange" style="font-size:10px;"><svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/></svg> Email</button><span class="flex-grow"></span><button onclick="submitFeedback('${msgId}', 1, this)" title="Helpful" class="btn-flat btn-flat-orange feedback-btn" style="font-size:10px;"><i data-lucide="thumbs-up" class="w-3 h-3"></i></button><button onclick="submitFeedback('${msgId}', -1, this)" title="Not helpful" class="btn-flat btn-flat-orange feedback-btn" style="font-size:10px;"><i data-lucide="thumbs-down" class="w-3 h-3"></i></button></div></div></div>`;
+    return div;
 }
 
 // Send message to API
@@ -778,7 +904,7 @@ async function sendMessage(message) {
     const oldChips = document.getElementById('followup-chips');
     if (oldChips) oldChips.remove();
 
-    showLoading();
+    showLoading(message);
     messageInput.disabled = true;
     sendButton.disabled = true;
 
@@ -800,6 +926,7 @@ async function sendMessage(message) {
 
         if (data.followups && data.followups.length > 0) {
             renderFollowups(data.followups);
+            addDynamicSuggestions(data.followups);
         }
 
     } catch (error) {
@@ -868,17 +995,28 @@ function clearChat() {
     conversationHistory = [];
     currentConversationId = null;
     messagesContainer.innerHTML = '';
-    // Re-add welcome
+    // Re-add welcome with conversation starters
     const welcome = document.createElement('div');
     welcome.id = 'welcomeMessage';
-    welcome.className = 'flex flex-col items-center justify-center h-full';
-    welcome.innerHTML = `<div class="text-center px-4">
-        <p class="text-[10px] text-apmt-orange-500 tracking-widest uppercase mb-2">apmt ai assistant</p>
-        <h2 class="text-lg sm:text-xl font-normal text-apm-500 mb-1">What can I look up?</h2>
-        <p class="text-xs sm:text-sm text-gray-400">Vessel operations, yard inventory, gate activity, equipment KPIs</p>
-    </div>`;
+    welcome.className = 'flex flex-col items-center justify-center h-full max-w-2xl mx-auto';
+    welcome.innerHTML = `
+        <div class="text-center px-4 mb-8">
+            <p class="text-[10px] text-apmt-orange-500 tracking-widest uppercase mb-3">apmt ai assistant</p>
+            <h2 class="text-xl sm:text-2xl font-normal text-apm-500 mb-2">How can I help you today?</h2>
+            <p class="text-xs sm:text-sm text-gray-400">Ask me anything about terminal operations in plain English</p>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full px-4 sm:px-0">
+            <button onclick="sendSuggestion('Give me a full overview of the terminal today — vessels, moves, yard, gate, everything')" class="starter-btn"><i data-lucide="layout-dashboard" class="w-4 h-4 text-apmt-orange-500"></i><span>Give me a full overview of the terminal today</span></button>
+            <button onclick="sendSuggestion('How are we performing this week compared to last week?')" class="starter-btn"><i data-lucide="git-compare" class="w-4 h-4 text-apmt-orange-500"></i><span>How are we performing this week vs last week?</span></button>
+            <button onclick="sendSuggestion('Which vessels are at the terminal right now and what is their productivity?')" class="starter-btn"><i data-lucide="ship" class="w-4 h-4 text-apmt-orange-500"></i><span>Which vessels are here and how productive are they?</span></button>
+            <button onclick="sendSuggestion('What are the main causes of crane delays this month?')" class="starter-btn"><i data-lucide="alert-triangle" class="w-4 h-4 text-apmt-orange-500"></i><span>What are the main causes of crane delays?</span></button>
+            <button onclick="sendSuggestion('Are there any containers with unusually long dwell times in the yard?')" class="starter-btn"><i data-lucide="clock" class="w-4 h-4 text-apmt-orange-500"></i><span>Are containers staying too long in the yard?</span></button>
+            <button onclick="sendSuggestion('Show me our best and worst performing vessels this month by CMPH')" class="starter-btn"><i data-lucide="trophy" class="w-4 h-4 text-apmt-orange-500"></i><span>Who are our best and worst performers?</span></button>
+        </div>
+        <p class="text-[10px] text-gray-300 mt-6">Or just type your own question below</p>
+    `;
     messagesContainer.appendChild(welcome);
-    // Remove followup chips
+    if (typeof lucide !== 'undefined') lucide.createIcons();
     const chips = document.getElementById('followup-chips');
     if (chips) chips.remove();
     messageInput.focus();
@@ -1150,6 +1288,210 @@ function startOnboardingTour() {
 window.restartTour = function() {
     localStorage.removeItem('apmt-tour-done');
     startOnboardingTour();
+};
+
+// ─── Typeahead Suggestions ───────────────────────────────────────────────────
+
+const SUGGESTIONS = [
+    // Natural conversational questions
+    { text: 'Give me a full overview of the terminal today', category: 'Overview' },
+    { text: 'How are we performing this week compared to last week?', category: 'Compare' },
+    { text: 'What vessels are at the terminal right now?', category: 'Vessels' },
+    { text: 'Which vessels are currently working?', category: 'Vessels' },
+    { text: 'What is the productivity of each vessel today?', category: 'Vessels' },
+    { text: 'Show me the CMPH for all vessels this month', category: 'Vessels' },
+    { text: 'Who are our best and worst performing vessels?', category: 'Vessels' },
+    { text: 'How many cranes are working on each vessel?', category: 'Cranes' },
+    { text: 'What are the main causes of crane delays?', category: 'Delays' },
+    { text: 'Which cranes have the most downtime?', category: 'Delays' },
+    { text: 'What percentage of delays are caused by equipment failures?', category: 'Delays' },
+    { text: 'Are containers staying too long in the yard?', category: 'Yard' },
+    { text: 'Show me the current yard inventory breakdown', category: 'Yard' },
+    { text: 'What is our yard utilization by block?', category: 'Yard' },
+    { text: 'How many reefer containers are in the yard?', category: 'Yard' },
+    { text: 'How is the gate performing today?', category: 'Gate' },
+    { text: 'What is the average truck turnaround time?', category: 'Gate' },
+    { text: 'What are the peak hours at the gate?', category: 'Gate' },
+    { text: 'How many vessels can we handle per day?', category: 'Capacity' },
+    { text: 'What is our berth utilization this month?', category: 'Capacity' },
+    { text: 'Compare this week moves vs last week', category: 'Compare' },
+    { text: 'Compare delays this week vs last week', category: 'Compare' },
+    { text: 'What happened with productivity yesterday?', category: 'Analysis' },
+    { text: 'Why is the CMPH low for the current vessel?', category: 'Analysis' },
+    { text: 'Show me all equipment and their status', category: 'Equipment' },
+];
+
+let typeaheadIndex = -1;
+let dynamicSuggestions = []; // AI-generated from follow-ups
+
+function addDynamicSuggestions(followups) {
+    // Remove old dynamic suggestions
+    dynamicSuggestions = followups.map(text => ({ text, category: 'Suggested' }));
+}
+
+function showTypeahead(query) {
+    const dropdown = document.getElementById('typeahead');
+    if (!query || query.length < 2) {
+        dropdown.classList.add('hidden');
+        typeaheadIndex = -1;
+        return;
+    }
+
+    const words = query.toLowerCase().split(/\s+/);
+
+    // Dynamic suggestions (from last AI response) ranked first
+    const dynamicMatches = dynamicSuggestions.filter(s =>
+        words.every(w => s.text.toLowerCase().includes(w))
+    );
+    const staticMatches = SUGGESTIONS.filter(s =>
+        words.every(w => s.text.toLowerCase().includes(w))
+    );
+    const matches = [...dynamicMatches, ...staticMatches].slice(0, 8);
+
+    if (matches.length === 0) {
+        dropdown.classList.add('hidden');
+        typeaheadIndex = -1;
+        return;
+    }
+
+    let lastCategory = '';
+    dropdown.innerHTML = matches.map((s, i) => {
+        let html = s.text;
+        for (const w of words) {
+            if (w.length < 2) continue;
+            const regex = new RegExp(`(${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+            html = html.replace(regex, '<span class="match">$1</span>');
+        }
+        let prefix = '';
+        if (s.category !== lastCategory) {
+            lastCategory = s.category;
+            prefix = `<div class="typeahead-category">${s.category}</div>`;
+        }
+        return prefix + `<div class="typeahead-item${i === typeaheadIndex ? ' active' : ''}" data-index="${i}" onmousedown="selectTypeahead(${i})">${html}</div>`;
+    }).join('');
+
+    dropdown.classList.remove('hidden');
+}
+
+window.selectTypeahead = function(index) {
+    const dropdown = document.getElementById('typeahead');
+    const words = messageInput.value.toLowerCase().split(/\s+/);
+    const dynamicMatches = dynamicSuggestions.filter(s => words.every(w => s.text.toLowerCase().includes(w)));
+    const staticMatches = SUGGESTIONS.filter(s => words.every(w => s.text.toLowerCase().includes(w)));
+    const matches = [...dynamicMatches, ...staticMatches].slice(0, 8);
+    if (matches[index]) {
+        messageInput.value = matches[index].text;
+        sendButton.disabled = false;
+    }
+    dropdown.classList.add('hidden');
+    typeaheadIndex = -1;
+    chatForm.dispatchEvent(new Event('submit'));
+};
+
+// Hook into the existing input event
+messageInput.addEventListener('input', function() {
+    showTypeahead(this.value.trim());
+});
+
+// Arrow key navigation
+messageInput.addEventListener('keydown', function(e) {
+    const dropdown = document.getElementById('typeahead');
+    if (dropdown.classList.contains('hidden')) return;
+
+    const items = dropdown.querySelectorAll('.typeahead-item');
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        typeaheadIndex = Math.min(typeaheadIndex + 1, items.length - 1);
+        items.forEach((el, i) => el.classList.toggle('active', i === typeaheadIndex));
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        typeaheadIndex = Math.max(typeaheadIndex - 1, 0);
+        items.forEach((el, i) => el.classList.toggle('active', i === typeaheadIndex));
+    } else if (e.key === 'Tab' || (e.key === 'Enter' && typeaheadIndex >= 0)) {
+        if (typeaheadIndex >= 0) {
+            e.preventDefault();
+            selectTypeahead(typeaheadIndex);
+        }
+    } else if (e.key === 'Escape') {
+        dropdown.classList.add('hidden');
+        typeaheadIndex = -1;
+    }
+});
+
+// Hide on blur
+messageInput.addEventListener('blur', function() {
+    setTimeout(() => {
+        document.getElementById('typeahead')?.classList.add('hidden');
+        typeaheadIndex = -1;
+    }, 150);
+});
+
+// ─── Annotations ────────────────────────────────────────────────────────────
+
+window.toggleAnnotations = async function(msgId) {
+    const panel = document.getElementById('annotations-' + msgId);
+    if (!panel) return;
+
+    if (panel.classList.contains('hidden')) {
+        panel.classList.remove('hidden');
+        await loadAnnotations(msgId);
+    } else {
+        panel.classList.add('hidden');
+    }
+};
+
+async function loadAnnotations(msgId) {
+    const panel = document.getElementById('annotations-' + msgId);
+    if (!panel) return;
+
+    let notes = [];
+    try {
+        const res = await fetch('/api/annotations/' + msgId);
+        notes = await res.json();
+    } catch (e) {}
+
+    panel.innerHTML = notes.map(n => `
+        <div class="annotation-item">
+            <span class="annotation-author">${escapeHtml(n.author)}</span>
+            <span class="annotation-text">${escapeHtml(typeof n.text === 'string' ? n.text : String(n.text))}</span>
+            <span class="annotation-time">${n.created_at ? new Date(n.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : ''}</span>
+            <button onclick="deleteAnnotation(${n.id}, '${msgId}')" class="btn-icon" style="width:18px;height:18px;flex-shrink:0;"><svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+        </div>
+    `).join('') + `
+        <div class="annotation-input">
+            <input type="text" id="note-input-${msgId}" placeholder="Add a note..." onkeydown="if(event.key==='Enter')submitAnnotation('${msgId}')">
+            <button onclick="submitAnnotation('${msgId}')" class="btn-flat btn-flat-primary" style="padding:4px 10px;font-size:10px;">Add</button>
+        </div>
+    `;
+}
+
+window.submitAnnotation = async function(msgId) {
+    const input = document.getElementById('note-input-' + msgId);
+    if (!input || !input.value.trim()) return;
+
+    try {
+        await fetch('/api/annotations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ messageId: msgId, author: 'User', text: input.value.trim() })
+        });
+        await loadAnnotations(msgId);
+    } catch (e) { console.error('Annotation error:', e); }
+};
+
+window.deleteAnnotation = async function(id, msgId) {
+    try {
+        await fetch('/api/annotations/' + id, { method: 'DELETE' });
+        await loadAnnotations(msgId);
+    } catch (e) {}
+};
+
+// ─── Drill-Down ─────────────────────────────────────────────────────────────
+
+window.drillDown = function(query) {
+    messageInput.value = query;
+    sendButton.disabled = false;
+    chatForm.dispatchEvent(new Event('submit'));
 };
 
 // ─── Voice Input ────────────────────────────────────────────────────────────
