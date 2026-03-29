@@ -32,11 +32,22 @@ export async function initializeDatabaseSchema(): Promise<void> {
 
     console.log('📦 Initializing database schema...');
 
+    // Try to increase max_allowed_packet (may fail without SUPER privilege — that's ok)
     const setupConn = await mysql.createConnection(connConfig);
-    await setupConn.query('SET GLOBAL max_allowed_packet = 67108864');
+    try {
+      await setupConn.query('SET GLOBAL max_allowed_packet = 67108864');
+    } catch (e) {
+      console.log('⚠ Could not SET GLOBAL max_allowed_packet (no SUPER privilege) — using session setting');
+    }
     await setupConn.end();
 
-    const connection = await mysql.createConnection(connConfig);
+    const connection = await mysql.createConnection({
+      ...connConfig,
+      maxAllowedPacket: 64 * 1024 * 1024,
+    } as any);
+    // Also try session-level setting
+    try { await connection.query('SET SESSION max_allowed_packet = 67108864'); } catch (e) {}
+
     const sqlFilePath = path.join(__dirname, '../demo_database.sql');
     const sqlContent = fs.readFileSync(sqlFilePath, 'utf8');
     await connection.query(sqlContent);
