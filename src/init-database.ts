@@ -8,65 +8,91 @@ const __dirname = path.dirname(__filename);
 
 export async function initializeDatabaseSchema(): Promise<void> {
   const dbName = process.env.DB_NAME || 'compass_db';
-  const connConfig = {
+  const baseConfig = {
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '3306'),
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
-    database: dbName,
     multipleStatements: true
   };
 
   try {
-    // Check if database already has data — skip reimport if so
-    const checkConn = await mysql.createConnection(connConfig);
+    // First try connecting WITH the database name
+    let connConfig: any = { ...baseConfig, database: dbName };
+    let connection;
+
     try {
-      const [rows]: any = await checkConn.query('SELECT COUNT(*) AS c FROM argo_carrier_visit');
+      connection = await mysql.createConnection(connConfig);
+    } catch (e: any) {
+      // If access denied on the DB, try without database to check if we can connect at all
+      if (e.code === 'ER_DBACCESS_DENIED_ERROR') {
+        console.log(`⚠ User "${baseConfig.user}" cannot access database "${dbName}"`);
+        console.log(`  Make sure MYSQL_DATABASE matches DB_NAME in your deployment config`);
+
+        // Try connecting without a database and create/use it
+        try {
+          const rootConn = await mysql.createConnection(baseConfig);
+          await rootConn.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+          await rootConn.query(`GRANT ALL PRIVILEGES ON \`${dbName}\`.* TO '${baseConfig.user}'@'%'`);
+          await rootConn.query('FLUSH PRIVILEGES');
+          await rootConn.end();
+          console.log(`  Created database "${dbName}" and granted access`);
+          connection = await mysql.createConnection(connConfig);
+        } catch (e2) {
+          // Can't create DB either — try connecting without specifying database
+          // Maybe the user has access but the DB doesn't exist yet
+          console.log(`  Trying to connect without specifying database...`);
+          connection = await mysql.createConnection(baseConfig);
+          try {
+            await connection.query(`USE \`${dbName}\``);
+          } catch (e3) {
+            console.error(`  Cannot access database "${dbName}". Check your MYSQL_DATABASE and DB_NAME env vars.`);
+            await connection.end();
+            throw e;
+          }
+        }
+      } else {
+        throw e;
+      }
+    }
+
+    // Check if data already exists
+    try {
+      const [rows]: any = await connection.query('SELECT COUNT(*) AS c FROM argo_carrier_visit');
       if (rows[0]?.c > 0) {
-        console.log(`✓ Database already has data (${rows[0].c} visits) — skipping reimport`);
-        await checkConn.end();
+        console.log(`✓ Database "${dbName}" has data (${rows[0].c} visits) — skipping reimport`);
+        await connection.end();
         return;
       }
     } catch (e) {
       // Table doesn't exist — proceed with import
     }
-    await checkConn.end();
 
-    console.log(`📦 Initializing database schema in "${dbName}"...`);
+    console.log(`📦 Importing demo data into "${dbName}"...`);
 
-    // Try to increase max_allowed_packet (may fail without SUPER privilege — that's ok)
-    const setupConn = await mysql.createConnection(connConfig);
-    try {
-      await setupConn.query('SET GLOBAL max_allowed_packet = 67108864');
-    } catch (e) {
-      console.log('  (no SUPER privilege for SET GLOBAL — ok)');
-    }
-    await setupConn.end();
-
-    const connection = await mysql.createConnection(connConfig);
+    // Try to increase packet size
+    try { await connection.query('SET GLOBAL max_allowed_packet = 67108864'); } catch (e) {}
     try { await connection.query('SET SESSION max_allowed_packet = 67108864'); } catch (e) {}
 
     const sqlFilePath = path.join(__dirname, '../demo_database.sql');
     let sqlContent = fs.readFileSync(sqlFilePath, 'utf8');
 
-    // Strip any DROP DATABASE / CREATE DATABASE / USE statements
-    // (the connection already targets the correct database via DB_NAME)
-    sqlContent = sqlContent.replace(/DROP\s+DATABASE\s+.+?;/gi, '');
-    sqlContent = sqlContent.replace(/CREATE\s+DATABASE\s+.+?;/gi, '');
-    sqlContent = sqlContent.replace(/USE\s+\w+;/gi, '');
+    // Strip any DROP/CREATE DATABASE and USE statements
+    sqlContent = sqlContent.replace(/DROP\s+DATABASE\s+[^;]+;/gi, '');
+    sqlContent = sqlContent.replace(/CREATE\s+DATABASE\s+[^;]+;/gi, '');
+    sqlContent = sqlContent.replace(/USE\s+`?\w+`?\s*;/gi, '');
 
     await connection.query(sqlContent);
 
-    // Shift all dates so the data is centered around today
-    // The demo data is anchored at 2026-03-29. Calculate the offset.
+    // Shift dates so data is centered around today
     const anchorDate = new Date('2026-03-29');
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const diffDays = Math.round((today.getTime() - anchorDate.getTime()) / (1000 * 60 * 60 * 24));
 
     if (diffDays !== 0) {
-      console.log(`📅 Shifting dates by ${diffDays} days to center data around today...`);
-      const dateCols = [
+      console.log(`  Shifting dates by ${diffDays} days...`);
+      const dateCols: [string, string[]][] = [
         ['argo_carrier_visit', ['ata', 'atd']],
         ['argo_visit_details', ['eta', 'etd', 'ata', 'atd']],
         ['inv_move_event', ['t_fetch', 't_put', 't_discharge']],
@@ -77,17 +103,16 @@ export async function initializeDatabaseSchema(): Promise<void> {
       for (const [table, cols] of dateCols) {
         for (const col of cols) {
           try {
-            await connection.query(`UPDATE ${table} SET ${col} = DATE_ADD(${col}, INTERVAL ${diffDays} DAY) WHERE ${col} IS NOT NULL`);
-          } catch (e) { /* column might not exist in slim version */ }
+            await connection.query(`UPDATE \`${table}\` SET \`${col}\` = DATE_ADD(\`${col}\`, INTERVAL ${diffDays} DAY) WHERE \`${col}\` IS NOT NULL`);
+          } catch (e) {}
         }
       }
     }
 
     await connection.end();
-
-    console.log('✓ Database schema imported successfully with fresh data!');
+    console.log('✓ Database imported successfully!');
   } catch (error) {
-    console.error('Error initializing database schema:', error);
+    console.error('Database init error:', error);
     throw error;
   }
 }
