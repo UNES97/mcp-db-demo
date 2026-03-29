@@ -11,9 +11,11 @@ SET SQL_MODE='NO_AUTO_VALUE_ON_ZERO';
 SET @OLD_TIME_ZONE=@@TIME_ZONE;
 SET TIME_ZONE='+00:00';
 
-DROP DATABASE IF EXISTS compass_db;
-CREATE DATABASE compass_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE compass_db;
+-- Use DB_NAME from env (defaults to compass_db)
+-- DROP/CREATE removed — Coolify/Docker creates the DB via MYSQL_DATABASE env var
+-- For local dev with root: uncomment below
+-- DROP DATABASE IF EXISTS compass_db;
+-- CREATE DATABASE IF NOT EXISTS compass_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- ============================================================================
 -- SCHEMA
