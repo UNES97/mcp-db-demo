@@ -1,63 +1,103 @@
-import Database from 'better-sqlite3';
+import initSqlJs, { Database as SqlJsDatabase } from 'sql.js';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import crypto from 'crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const DB_PATH = path.join(__dirname, '../chat-history.sqlite');
 
-const db = new Database(path.join(__dirname, '../chat-history.sqlite'));
+let db: SqlJsDatabase;
 
-// Enable WAL mode for better concurrent read performance
-db.pragma('journal_mode = WAL');
+async function getDb(): Promise<SqlJsDatabase> {
+  if (db) return db;
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS conversations (
-    id TEXT PRIMARY KEY,
-    title TEXT NOT NULL DEFAULT 'New Chat',
-    created_at TEXT DEFAULT (datetime('now')),
-    updated_at TEXT DEFAULT (datetime('now'))
-  );
-  CREATE TABLE IF NOT EXISTS messages (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    conversation_id TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
-    role TEXT NOT NULL,
-    content TEXT NOT NULL,
-    created_at TEXT DEFAULT (datetime('now'))
-  );
-  CREATE INDEX IF NOT EXISTS idx_messages_conv ON messages(conversation_id);
-`);
+  const SQL = await initSqlJs();
 
-export function createConversation(): string {
+  // Load existing file or create new
+  if (fs.existsSync(DB_PATH)) {
+    const buffer = fs.readFileSync(DB_PATH);
+    db = new SQL.Database(buffer);
+  } else {
+    db = new SQL.Database();
+  }
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS conversations (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL DEFAULT 'New Chat',
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      conversation_id TEXT NOT NULL,
+      role TEXT NOT NULL,
+      content TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_messages_conv ON messages(conversation_id);
+  `);
+
+  return db;
+}
+
+function save(): void {
+  if (!db) return;
+  const data = db.export();
+  fs.writeFileSync(DB_PATH, Buffer.from(data));
+}
+
+export async function createConversation(): Promise<string> {
+  const d = await getDb();
   const id = crypto.randomUUID();
-  db.prepare('INSERT INTO conversations (id) VALUES (?)').run(id);
+  d.run('INSERT INTO conversations (id) VALUES (?)', [id]);
+  save();
   return id;
 }
 
-export function addMessage(conversationId: string, role: string, content: string): void {
-  db.prepare('INSERT INTO messages (conversation_id, role, content) VALUES (?, ?, ?)').run(conversationId, role, content);
-  db.prepare('UPDATE conversations SET updated_at = datetime(\'now\') WHERE id = ?').run(conversationId);
+export async function addMessage(conversationId: string, role: string, content: string): Promise<void> {
+  const d = await getDb();
+  d.run('INSERT INTO messages (conversation_id, role, content) VALUES (?, ?, ?)', [conversationId, role, content]);
+  d.run("UPDATE conversations SET updated_at = datetime('now') WHERE id = ?", [conversationId]);
+  save();
 }
 
-export function updateTitle(conversationId: string, title: string): void {
-  db.prepare('UPDATE conversations SET title = ? WHERE id = ?').run(title.slice(0, 80), conversationId);
+export async function updateTitle(conversationId: string, title: string): Promise<void> {
+  const d = await getDb();
+  d.run('UPDATE conversations SET title = ? WHERE id = ?', [title.slice(0, 80), conversationId]);
+  save();
 }
 
-export function getConversations(): any[] {
-  return db.prepare(`
+export async function getConversations(): Promise<any[]> {
+  const d = await getDb();
+  const stmt = d.prepare(`
     SELECT c.id, c.title, c.created_at, c.updated_at,
       (SELECT COUNT(*) FROM messages WHERE conversation_id = c.id) AS message_count
     FROM conversations c
     ORDER BY c.updated_at DESC
     LIMIT 50
-  `).all();
+  `);
+  const results: any[] = [];
+  while (stmt.step()) results.push(stmt.getAsObject());
+  stmt.free();
+  return results;
 }
 
-export function getMessages(conversationId: string): any[] {
-  return db.prepare('SELECT role, content, created_at FROM messages WHERE conversation_id = ? ORDER BY id ASC').all(conversationId);
+export async function getMessages(conversationId: string): Promise<any[]> {
+  const d = await getDb();
+  const stmt = d.prepare('SELECT role, content, created_at FROM messages WHERE conversation_id = ? ORDER BY id ASC');
+  stmt.bind([conversationId]);
+  const results: any[] = [];
+  while (stmt.step()) results.push(stmt.getAsObject());
+  stmt.free();
+  return results;
 }
 
-export function deleteConversation(conversationId: string): void {
-  db.prepare('DELETE FROM messages WHERE conversation_id = ?').run(conversationId);
-  db.prepare('DELETE FROM conversations WHERE id = ?').run(conversationId);
+export async function deleteConversation(conversationId: string): Promise<void> {
+  const d = await getDb();
+  d.run('DELETE FROM messages WHERE conversation_id = ?', [conversationId]);
+  d.run('DELETE FROM conversations WHERE id = ?', [conversationId]);
+  save();
 }

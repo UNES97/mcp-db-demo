@@ -707,12 +707,12 @@ app.post('/api/chat', async (req, res) => {
     // Persist to conversation history
     if (conversationId && lastUserMsg) {
       try {
-        chatHistory.addMessage(conversationId, 'user', lastUserMsg.content);
-        chatHistory.addMessage(conversationId, 'assistant', textContent);
+        await chatHistory.addMessage(conversationId, 'user', lastUserMsg.content);
+        await chatHistory.addMessage(conversationId, 'assistant', textContent);
         // Auto-title from first user message
-        const msgs = chatHistory.getMessages(conversationId);
+        const msgs = await chatHistory.getMessages(conversationId);
         if (msgs.length <= 2) {
-          chatHistory.updateTitle(conversationId, lastUserMsg.content.slice(0, 80));
+          await chatHistory.updateTitle(conversationId, lastUserMsg.content.slice(0, 80));
         }
       } catch (e) { console.error('History save error:', e); }
     }
@@ -838,10 +838,10 @@ app.post('/api/chat/stream', async (req, res) => {
     // Persist to history
     if (conversationId && lastUserMsg) {
       try {
-        chatHistory.addMessage(conversationId, 'user', lastUserMsg.content);
-        chatHistory.addMessage(conversationId, 'assistant', fullText);
-        const msgs = chatHistory.getMessages(conversationId);
-        if (msgs.length <= 2) chatHistory.updateTitle(conversationId, lastUserMsg.content.slice(0, 80));
+        await chatHistory.addMessage(conversationId, 'user', lastUserMsg.content);
+        await chatHistory.addMessage(conversationId, 'assistant', fullText);
+        const msgs = await chatHistory.getMessages(conversationId);
+        if (msgs.length <= 2) await chatHistory.updateTitle(conversationId, lastUserMsg.content.slice(0, 80));
       } catch (e) {}
     }
 
@@ -946,22 +946,22 @@ app.get('/api/kpis', async (req, res) => {
 });
 
 // Conversation history endpoints
-app.post('/api/conversations', (req, res) => {
-  const id = chatHistory.createConversation();
+app.post('/api/conversations', async (req, res) => {
+  const id = await chatHistory.createConversation();
   res.json({ id });
 });
 
-app.get('/api/conversations', (req, res) => {
-  res.json(chatHistory.getConversations());
+app.get('/api/conversations', async (req, res) => {
+  res.json(await chatHistory.getConversations());
 });
 
-app.get('/api/conversations/:id', (req, res) => {
-  const messages = chatHistory.getMessages(req.params.id);
+app.get('/api/conversations/:id', async (req, res) => {
+  const messages = await chatHistory.getMessages(req.params.id);
   res.json(messages);
 });
 
-app.delete('/api/conversations/:id', (req, res) => {
-  chatHistory.deleteConversation(req.params.id);
+app.delete('/api/conversations/:id', async (req, res) => {
+  await chatHistory.deleteConversation(req.params.id);
   res.json({ status: 'deleted' });
 });
 
