@@ -463,7 +463,7 @@ async function executeToolFunctionRaw(name: string, args: any): Promise<any> {
         return await executeQuery(QUERIES.VESSEL_PRODUCTIVITY, [`%${args.vesselName}%`]);
 
       case 'get_vessel_cranes':
-        return await executeQuery(QUERIES.VESSEL_CRANES, [args.visitId]);
+        return await executeQuery(QUERIES.VESSEL_CRANES, [args.visitId, args.visitId]);
 
       case 'get_vessel_longest_crane':
         return await executeQuery(QUERIES.VESSEL_LONGEST_CRANE);
@@ -550,7 +550,7 @@ async function executeToolFunctionRaw(name: string, args: any): Promise<any> {
         return await executeQuery(QUERIES.DWELL_TIME_BY_CATEGORY);
 
       case 'get_crane_moves_by_vessel':
-        return await executeQuery(QUERIES.CRANE_MOVES_BY_VESSEL, [args.visitId]);
+        return await executeQuery(QUERIES.CRANE_MOVES_BY_VESSEL, [args.visitId, args.visitId]);
 
       case 'get_vessel_twin_stats':
         return await executeQuery(QUERIES.VESSEL_TWIN_STATS, [args.visitId]);

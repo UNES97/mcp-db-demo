@@ -43,10 +43,7 @@ export async function initializeDatabaseSchema(): Promise<void> {
     }
     await setupConn.end();
 
-    const connection = await mysql.createConnection({
-      ...connConfig,
-      maxAllowedPacket: 64 * 1024 * 1024,
-    } as any);
+    const connection = await mysql.createConnection(connConfig);
     // Also try session-level setting
     try { await connection.query('SET SESSION max_allowed_packet = 67108864'); } catch (e) {}
 

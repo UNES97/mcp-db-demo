@@ -187,26 +187,20 @@ export const QUERIES = {
 
   // Get vessel cranes with first and last move times
   VESSEL_CRANES: `
-    SELECT
-      qc.full_name AS crane,
-      DATE_FORMAT(MIN(
-        CASE WHEN a.move_kind = 'LOAD' THEN a.t_put WHEN a.move_kind = 'DSCH' THEN t_discharge END
-      ), '%Y-%m-%dT%H:%i:%s') AS first_move,
-      DATE_FORMAT(MAX(
-        CASE WHEN a.move_kind = 'LOAD' THEN a.t_put WHEN a.move_kind = 'DSCH' THEN t_discharge END
-      ), '%Y-%m-%dT%H:%i:%s') AS latest_move
-    FROM inv_move_event a
-    JOIN xps_che qc ON (
-      CASE WHEN a.move_kind = 'DSCH' THEN a.che_fetch WHEN a.move_kind = 'LOAD' THEN a.che_put END
-    ) = qc.gkey
-    WHERE (
-      CASE WHEN a.move_kind = 'DSCH' THEN a.FM_pos_locid WHEN a.move_kind = 'LOAD' THEN a.TO_pos_locid END
-    ) = ?
-      AND (
-        CASE WHEN a.move_kind = 'LOAD' THEN a.t_put WHEN a.move_kind = 'DSCH' THEN t_discharge END
-      ) IS NOT NULL
-      AND qc.full_name LIKE '%QC%'
-    GROUP BY qc.full_name
+    SELECT crane, COUNT(*) AS moves,
+      DATE_FORMAT(MIN(move_time), '%Y-%m-%dT%H:%i:%s') AS first_move,
+      DATE_FORMAT(MAX(move_time), '%Y-%m-%dT%H:%i:%s') AS latest_move
+    FROM (
+      SELECT qc.full_name AS crane, a.t_fetch AS move_time
+      FROM inv_move_event a JOIN xps_che qc ON qc.gkey = a.che_fetch
+      WHERE a.move_kind = 'DSCH' AND a.FM_pos_locid = ? AND a.t_fetch IS NOT NULL AND qc.kind_enum = 'QC'
+      UNION ALL
+      SELECT qc.full_name AS crane, a.t_put AS move_time
+      FROM inv_move_event a JOIN xps_che qc ON qc.gkey = a.che_put
+      WHERE a.move_kind = 'LOAD' AND a.TO_pos_locid = ? AND a.t_put IS NOT NULL AND qc.kind_enum = 'QC'
+    ) combined
+    GROUP BY crane
+    ORDER BY moves DESC
   `,
 
   // Get vessel's longest working crane
@@ -450,21 +444,19 @@ export const QUERIES = {
 
   // Crane moves detail for a vessel (discharge vs load, per crane)
   CRANE_MOVES_BY_VESSEL: `
-    SELECT
-      qc.full_name AS crane,
-      a.move_kind,
-      COUNT(*) AS move_count,
-      CASE WHEN a.length_mm IN (6096, 6068, 6066) THEN 20 ELSE 40 END AS container_length
-    FROM inv_move_event a
-    JOIN xps_che qc ON (
-      CASE WHEN a.move_kind = 'DSCH' THEN a.che_fetch WHEN a.move_kind = 'LOAD' THEN a.che_put END
-    ) = qc.gkey
-    WHERE (
-      CASE WHEN a.move_kind = 'DSCH' THEN a.FM_pos_locid WHEN a.move_kind = 'LOAD' THEN a.TO_pos_locid END
-    ) = ?
-      AND qc.full_name LIKE '%QC%'
-    GROUP BY qc.full_name, a.move_kind, CASE WHEN a.length_mm IN (6096, 6068, 6066) THEN 20 ELSE 40 END
-    ORDER BY crane, a.move_kind
+    SELECT crane, move_kind, COUNT(*) AS move_count,
+      CASE WHEN length_mm IN (6096,6068,6066) THEN 20 ELSE 40 END AS container_length
+    FROM (
+      SELECT qc.full_name AS crane, a.move_kind, a.length_mm
+      FROM inv_move_event a JOIN xps_che qc ON qc.gkey = a.che_fetch
+      WHERE a.move_kind = 'DSCH' AND a.FM_pos_locid = ? AND qc.kind_enum = 'QC'
+      UNION ALL
+      SELECT qc.full_name AS crane, a.move_kind, a.length_mm
+      FROM inv_move_event a JOIN xps_che qc ON qc.gkey = a.che_put
+      WHERE a.move_kind = 'LOAD' AND a.TO_pos_locid = ? AND qc.kind_enum = 'QC'
+    ) combined
+    GROUP BY crane, move_kind, CASE WHEN length_mm IN (6096,6068,6066) THEN 20 ELSE 40 END
+    ORDER BY crane, move_kind
   `,
 
   // Vessel twin lift stats

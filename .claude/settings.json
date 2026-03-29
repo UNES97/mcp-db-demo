@@ -24,7 +24,13 @@
       "Bash(curl -s http://localhost:3000/api/kpis)",
       "Bash(curl -s http://localhost:3000/api/conversations)",
       "Bash(/Applications/MAMP/Library/bin/mysql --host=localhost --port=8889 --user=root --password=root -e \"DESCRIBE compass_db.vsl_vessel_visit_details;\")",
-      "Bash(grep -c \"name: ''get_\" /Applications/MAMP/htdocs/AIs/mcp-db-demo/src/chat-server.ts)"
+      "Bash(grep -c \"name: ''get_\" /Applications/MAMP/htdocs/AIs/mcp-db-demo/src/chat-server.ts)",
+      "Bash(/Applications/MAMP/Library/bin/mysql --host=localhost --port=8889 --user=root --password=root -e \":*)",
+      "Bash(/Applications/MAMP/Library/bin/mysql --host=localhost --port=8889 --user=root --password=root 2)",
+      "Bash(/dev/null:*)"
+    ],
+    "additionalDirectories": [
+      "/tmp"
     ]
   }
 }

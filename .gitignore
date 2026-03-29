@@ -1,68 +1,41 @@
 # Dependencies
 node_modules/
-npm-debug.log
-yarn-error.log
-yarn.lock
-/sql
-# Build output
+
+# Build
 build/
 dist/
 
-# Environment variables
+# Environment
 .env
 .env.local
 .env.*.local
 
+# SQLite (conversation history — runtime data)
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+# SQL reference queries (not needed for app)
+/sql
+
 # Logs
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-logs/
 
-# OS files
+# OS
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
 
 # IDE
 .vscode/
 .idea/
-*.swp
-*.swo
-*~
-.project
-.classpath
-.settings/
 
 # TypeScript
 *.tsbuildinfo
 
-# Docker volumes and data
+# Docker
 mysql_data/
-
-# Database backups
-backups/*.sql
-!backups/.gitkeep
-
-# Docker overrides
 docker-compose.override.yml
 
-# Runtime data
-pids/
-*.pid
-*.seed
-*.pid.lock
-
-# Test coverage
-coverage/
-.nyc_output/
-
-# Temporary files
+# Temp
 tmp/
 temp/
-*.tmp

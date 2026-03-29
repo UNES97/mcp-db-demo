@@ -1145,5 +1145,27 @@ window.restartTour = function() {
 
 checkServerStatus();
 loadKPIs();
+
+// Query scroll fade indicators
+(function initQueryScroll() {
+    const scroll = document.getElementById('queryScroll');
+    if (!scroll) return;
+    const fadeL = scroll.parentElement.querySelector('.query-fade-left');
+    const fadeR = scroll.parentElement.querySelector('.query-fade-right');
+
+    function update() {
+        const { scrollLeft, scrollWidth, clientWidth } = scroll;
+        fadeL.classList.toggle('visible', scrollLeft > 8);
+        fadeR.classList.toggle('visible', scrollLeft < scrollWidth - clientWidth - 8);
+    }
+
+    scroll.addEventListener('scroll', update, { passive: true });
+    update();
+    setTimeout(update, 500);
+
+    window.scrollQueries = function(dir) {
+        scroll.scrollBy({ left: dir * 250, behavior: 'smooth' });
+    };
+})();
 setInterval(loadKPIs, 5 * 60 * 1000);
 startOnboardingTour();
