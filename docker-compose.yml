@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-apm_terminal}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-compass_db}
       MYSQL_USER: ${MYSQL_USER:-apm_user}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-apm_password}
     ports:
@@ -37,9 +37,8 @@ services:
       DB_PASSWORD: ${MYSQL_PASSWORD:-apm_password}
       DB_NAME: ${MYSQL_DATABASE:-apm_terminal}
       DB_CONNECTION_LIMIT: 10
-      AI_PROVIDER: ${AI_PROVIDER:-DEEPSEEK}
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-sonnet-4-20250514}
     ports:
       - "3000:3000"
     depends_on:

@@ -20,7 +20,7 @@
 }
 
 body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Maersk Headline', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: linear-gradient(135deg, var(--apm-navy) 0%, var(--apm-dark) 100%);
     min-height: 100vh;
     display: flex;
@@ -276,7 +276,7 @@ header {
     cursor: pointer;
     text-align: left;
     font-size: 14px;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Maersk Headline', sans-serif;
     transition: all 0.2s;
     color: var(--apm-navy);
     font-weight: 500;
@@ -350,7 +350,7 @@ header {
     border: none;
     outline: none;
     resize: none;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Maersk Headline', sans-serif;
     font-size: 15px;
     line-height: 1.5;
     max-height: 120px;

@@ -5,10 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>APM Terminals - Operations Intelligence Platform</title>
 
-    <!-- Ubuntu Font -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Maersk Headline Font -->
+    <style>
+        @font-face {
+            font-family: 'Maersk Headline';
+            src: url('fonts/maersk-fonts/Maersk Headline/Maersk Headline Webfonts/MaerskHeadline-Light.woff2') format('woff2'),
+                 url('fonts/maersk-fonts/Maersk Headline/Maersk Headline Webfonts/MaerskHeadline-Light.woff') format('woff');
+            font-weight: 300;
+            font-style: normal;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'Maersk Headline';
+            src: url('fonts/maersk-fonts/Maersk Headline/Maersk Headline Webfonts/MaerskHeadline-Regular.woff2') format('woff2'),
+                 url('fonts/maersk-fonts/Maersk Headline/Maersk Headline Webfonts/MaerskHeadline-Regular.woff') format('woff');
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'Maersk Headline';
+            src: url('fonts/maersk-fonts/Maersk Headline/Maersk Headline Webfonts/MaerskHeadline-Bold.woff2') format('woff2'),
+                 url('fonts/maersk-fonts/Maersk Headline/Maersk Headline Webfonts/MaerskHeadline-Bold.woff') format('woff');
+            font-weight: 700;
+            font-style: normal;
+            font-display: swap;
+        }
+    </style>
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -34,9 +57,18 @@
                             600: '#00335E',
                             700: '#002A4B',
                         },
+                        'apmt-orange': {
+                            DEFAULT: '#FF6B35',
+                            50: '#FFF3EE',
+                            100: '#FFE0D1',
+                            200: '#FFBFA3',
+                            500: '#FF6B35',
+                            600: '#E55A28',
+                            700: '#CC4A1C',
+                        },
                     },
                     fontFamily: {
-                        'ubuntu': ['Ubuntu', 'sans-serif'],
+                        'maersk': ['"Maersk Headline"', 'sans-serif'],
                     }
                 }
             }
@@ -45,7 +77,7 @@
 
     <style>
         body {
-            font-family: 'Ubuntu', sans-serif;
+            font-family: 'Maersk Headline', sans-serif;
         }
     </style>
 </head>
@@ -54,11 +86,7 @@
 
     <!-- Top Bar -->
     <div class="bg-apm-500 text-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-2 flex items-center justify-between text-xs">
-            <div class="flex items-center gap-3 sm:gap-6">
-                <span class="font-medium hidden sm:inline">OPERATIONS INTELLIGENCE PLATFORM</span>
-                <span class="font-medium sm:hidden">OPS PLATFORM</span>
-            </div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-2 flex items-center justify-end text-xs">
             <div class="flex items-center gap-2">
                 <div class="w-1.5 h-1.5 rounded-full" id="statusDot"></div>
                 <span id="statusText" class="font-medium">Connecting...</span>
@@ -67,141 +95,159 @@
     </div>
 
     <!-- Main Header -->
-    <header class="bg-white border-b border-gray-200">
+    <header class="bg-white border-b border-gray-100">
         <div class="max-w-7xl mx-auto px-4 sm:px-6">
-            <!-- Top Section: Logo and Info -->
             <div class="flex items-center justify-between py-3 sm:py-4">
                 <div class="flex items-center gap-3 sm:gap-4">
                     <img src="logo.png" alt="APM Terminals" class="h-8 sm:h-12">
-                    <div class="border-l border-gray-300 h-8 sm:h-12 hidden sm:block"></div>
-                    <div>
-                        <h1 class="text-base sm:text-xl font-bold text-gray-900">APM Terminals</h1>
-                        <p class="text-xs sm:text-sm text-gray-600">AI Operations Assistant</p>
+                    <div class="hidden sm:block">
+                        <h1 class="text-base sm:text-xl font-normal text-apm-500 leading-tight">APM Terminals</h1>
+                        <p class="text-[11px] sm:text-xs text-apmt-orange-500 font-normal tracking-widest uppercase">AI Assistant</p>
                     </div>
                 </div>
-                <div class="text-right hidden sm:block">
-                    <div class="text-xs text-gray-500 uppercase tracking-wider">Tangier Med Terminal</div>
-                    <div class="text-xs sm:text-sm font-semibold text-gray-900" id="currentDate"></div>
+                <div class="flex items-center gap-2">
+                    <button onclick="toggleHistory()" class="btn-icon btn-flat-orange" title="History"><i data-lucide="history" class="w-4 h-4"></i></button>
+                    <button onclick="clearChat()" class="btn-icon btn-flat-orange" title="New chat"><i data-lucide="plus" class="w-4 h-4"></i></button>
+                    <button onclick="restartTour()" class="btn-icon btn-flat-orange" title="Tour"><i data-lucide="info" class="w-4 h-4"></i></button>
+                    <button onclick="toggleShortcutModal()" class="btn-icon btn-flat-orange" title="Keyboard shortcuts"><span class="text-xs">?</span></button>
+                    <div class="hidden sm:block pl-2 border-l border-gray-200 ml-1">
+                        <div class="text-[11px] text-gray-400 uppercase tracking-widest">Tangier Med</div>
+                        <div class="text-xs font-normal text-apm-500" id="currentDate"></div>
+                    </div>
                 </div>
             </div>
-
-            <!-- Navigation Menu -->
-            <nav class="flex items-center gap-6 sm:gap-8 -mb-px">
-                <a href="index.html" class="group flex items-center gap-2 px-1 py-3 border-b-2 border-apm-500 text-apm-600 font-medium text-sm transition-colors">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
-                    </svg>
-                    <span class="hidden sm:inline">Home</span>
-                </a>
-                <a href="delays.html" class="group flex items-center gap-2 px-1 py-3 border-b-2 border-transparent text-gray-600 hover:text-apm-600 hover:border-gray-300 font-medium text-sm transition-colors">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                    </svg>
-                    <span class="hidden sm:inline">Delay Analytics</span>
-                    <span class="sm:hidden">Delays</span>
-                </a>
-            </nav>
         </div>
     </header>
 
+    <!-- History Sidebar -->
+    <div id="historySidebar" class="fixed inset-0 z-40 hidden">
+        <div class="absolute inset-0 bg-black/30" onclick="toggleHistory()"></div>
+        <div class="absolute left-0 top-0 bottom-0 w-72 bg-white shadow-xl flex flex-col animate-modal-in">
+            <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                <span class="text-sm text-apm-500">Conversations</span>
+                <button onclick="toggleHistory()" class="btn-icon" title="Close"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <div id="historyList" class="flex-1 overflow-y-auto p-2"></div>
+        </div>
+    </div>
+
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-3 sm:px-6 py-3 sm:py-6">
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 h-[calc(100vh-160px)] sm:h-[calc(100vh-200px)] flex flex-col">
+        <!-- KPI Cards -->
+        <div id="kpiCards" class="grid grid-cols-2 sm:grid-cols-4 gap-px mb-3 bg-gray-200">
+            <div class="bg-white px-3 py-2 flex items-center justify-between">
+                <div class="flex items-center gap-2"><i data-lucide="ship" class="w-3 h-3 text-apmt-orange-500"></i><span class="text-[10px] text-gray-400 uppercase tracking-widest">Active Vessels</span></div>
+                <span id="kpi-vessels" class="text-sm text-apm-500">--</span>
+            </div>
+            <div class="bg-white px-3 py-2 flex items-center justify-between">
+                <div class="flex items-center gap-2"><i data-lucide="arrow-up-down" class="w-3 h-3 text-apmt-orange-500"></i><span class="text-[10px] text-gray-400 uppercase tracking-widest">Moves Today</span></div>
+                <span id="kpi-moves" class="text-sm text-apm-500">--</span>
+            </div>
+            <div class="bg-white px-3 py-2 flex items-center justify-between">
+                <div class="flex items-center gap-2"><i data-lucide="container" class="w-3 h-3 text-apmt-orange-500"></i><span class="text-[10px] text-gray-400 uppercase tracking-widest">Yard TEUs</span></div>
+                <span id="kpi-yard" class="text-sm text-apm-500">--</span>
+            </div>
+            <div class="bg-white px-3 py-2 flex items-center justify-between">
+                <div class="flex items-center gap-2"><i data-lucide="timer" class="w-3 h-3 text-apmt-orange-500"></i><span class="text-[10px] text-gray-400 uppercase tracking-widest">Avg Turnaround</span></div>
+                <span id="kpi-turnaround" class="text-sm text-apm-500">--</span>
+            </div>
+        </div>
 
-            <!-- Quick Queries - Fixed at Top -->
-            <div class="border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white px-3 sm:px-6 py-2 sm:py-3">
-                <div class="flex items-center gap-2 overflow-x-auto hide-scrollbar pb-1">
-                    <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-apm-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                    </svg>
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 h-[calc(100vh-220px)] sm:h-[calc(100vh-260px)] flex flex-col transition-colors">
 
+            <!-- Quick Queries -->
+            <div id="quickQueries" class="border-b border-gray-100 px-3 sm:px-6 py-2 sm:py-2.5">
+                <div class="flex items-center gap-2 overflow-x-auto hide-scrollbar">
+
+                    <button onclick="sendSuggestion('Show me the full terminal overview for today')"
+                            class="query-btn query-btn-primary query-btn-breathe"><i data-lucide="star" class="w-3 h-3"></i><i data-lucide="layout-dashboard" class="w-3 h-3"></i>Terminal Overview</button>
+
+                    <span class="flex-shrink-0 text-[10px] font-normal text-apmt-orange-500 uppercase tracking-widest">Quay</span>
                     <button onclick="sendSuggestion('What visits are at the terminal today?')"
-                            class="flex-shrink-0 px-2.5 sm:px-3 py-1.5 bg-white hover:bg-apm-500 border border-gray-200 hover:border-apm-500 text-gray-700 hover:text-white rounded-full text-xs transition-all shadow-sm whitespace-nowrap">
-                        What visits are at the terminal today?
-                    </button>
+                            class="query-btn"><i data-lucide="ship" class="w-3 h-3"></i>Today's visits</button>
+                    <button onclick="sendSuggestion('Show today\'s vessel visits with planned vs executed moves as a chart')"
+                            class="query-btn"><i data-lucide="bar-chart-3" class="w-3 h-3"></i>Planned vs Executed</button>
+                    <button onclick="sendSuggestion('Show today\'s vessel productivity KPIs (CMPH) with a chart')"
+                            class="query-btn"><i data-lucide="trending-up" class="w-3 h-3"></i>Productivity</button>
+                    <button onclick="sendSuggestion('Show a breakdown of today\'s vessel visits by phase as a pie chart')"
+                            class="query-btn"><i data-lucide="pie-chart" class="w-3 h-3"></i>By Phase</button>
+                    <button onclick="sendSuggestion('Show today\'s total moves and port hours per vessel as a chart')"
+                            class="query-btn"><i data-lucide="gauge" class="w-3 h-3"></i>KPIs</button>
 
-                    <button onclick="sendSuggestion('Show me all vessels currently working')"
-                            class="flex-shrink-0 px-2.5 sm:px-3 py-1.5 bg-white hover:bg-apm-500 border border-gray-200 hover:border-apm-500 text-gray-700 hover:text-white rounded-full text-xs transition-all shadow-sm whitespace-nowrap">
-                        Show me all vessels currently working
-                    </button>
+                    <span class="flex-shrink-0 text-[10px] font-normal text-apmt-orange-500 uppercase tracking-widest ml-1">Yard</span>
+                    <button onclick="sendSuggestion('Show current yard inventory by category with a chart')"
+                            class="query-btn"><i data-lucide="container" class="w-3 h-3"></i>Inventory</button>
+                    <button onclick="sendSuggestion('Show yard inventory by block with a chart')"
+                            class="query-btn"><i data-lucide="layout-grid" class="w-3 h-3"></i>Blocks</button>
+                    <button onclick="sendSuggestion('Show dwell time by category with a chart')"
+                            class="query-btn"><i data-lucide="clock" class="w-3 h-3"></i>Dwell Time</button>
 
-                    <button onclick="sendSuggestion('List all Maersk vessels and their status')"
-                            class="flex-shrink-0 px-2.5 sm:px-3 py-1.5 bg-white hover:bg-apm-500 border border-gray-200 hover:border-apm-500 text-gray-700 hover:text-white rounded-full text-xs transition-all shadow-sm whitespace-nowrap">
-                        List all Maersk vessels and their status
-                    </button>
+                    <span class="flex-shrink-0 text-[10px] font-normal text-apmt-orange-500 uppercase tracking-widest ml-1">Gate</span>
+                    <button onclick="sendSuggestion('Show today\'s gate activity summary with a chart')"
+                            class="query-btn"><i data-lucide="log-in" class="w-3 h-3"></i>Activity</button>
+                    <button onclick="sendSuggestion('Show today\'s truck turnaround times')"
+                            class="query-btn"><i data-lucide="truck" class="w-3 h-3"></i>Turnaround</button>
 
-                    <button onclick="sendSuggestion('Show me upcoming inbound vessels this week')"
-                            class="flex-shrink-0 px-2.5 sm:px-3 py-1.5 bg-white hover:bg-apm-500 border border-gray-200 hover:border-apm-500 text-gray-700 hover:text-white rounded-full text-xs transition-all shadow-sm whitespace-nowrap">
-                        Show me upcoming inbound vessels this week
-                    </button>
+                    <span class="flex-shrink-0 text-[10px] font-normal text-apmt-orange-500 uppercase tracking-widest ml-1">Equip</span>
+                    <button onclick="sendSuggestion('Show all active terminal equipment by type with a chart')"
+                            class="query-btn"><i data-lucide="cog" class="w-3 h-3"></i>Fleet</button>
+                    <button onclick="sendSuggestion('Show crane delays summary with a chart')"
+                            class="query-btn"><i data-lucide="alert-triangle" class="w-3 h-3"></i>Delays</button>
 
-                    <button onclick="sendSuggestion('Which cranes are currently active?')"
-                            class="flex-shrink-0 px-2.5 sm:px-3 py-1.5 bg-white hover:bg-apm-500 border border-gray-200 hover:border-apm-500 text-gray-700 hover:text-white rounded-full text-xs transition-all shadow-sm whitespace-nowrap">
-                        Which cranes are currently active?
-                    </button>
+                    <span class="flex-shrink-0 text-[10px] font-normal text-apmt-orange-500 uppercase tracking-widest ml-1">Compare</span>
+                    <button onclick="sendCompare('moves')" class="query-btn"><i data-lucide="columns" class="w-3 h-3"></i>Moves: Week vs Week</button>
+                    <button onclick="sendCompare('productivity')" class="query-btn"><i data-lucide="git-compare" class="w-3 h-3"></i>Productivity: Week vs Week</button>
+                    <button onclick="sendCompare('delays')" class="query-btn"><i data-lucide="git-compare" class="w-3 h-3"></i>Delays: Week vs Week</button>
 
-                    <button onclick="sendSuggestion('Show crane delays by type')"
-                            class="flex-shrink-0 px-2.5 sm:px-3 py-1.5 bg-white hover:bg-apm-500 border border-gray-200 hover:border-apm-500 text-gray-700 hover:text-white rounded-full text-xs transition-all shadow-sm whitespace-nowrap">
-                        Show crane delays by type
-                    </button>
-
-                    <button onclick="sendSuggestion('What is the total container count for today?')"
-                            class="flex-shrink-0 px-2.5 sm:px-3 py-1.5 bg-white hover:bg-apm-500 border border-gray-200 hover:border-apm-500 text-gray-700 hover:text-white rounded-full text-xs transition-all shadow-sm whitespace-nowrap">
-                        What is the total container count for today?
-                    </button>
-
-                    <button onclick="sendSuggestion('Show me all MSC vessels scheduled this month')"
-                            class="flex-shrink-0 px-2.5 sm:px-3 py-1.5 bg-white hover:bg-apm-500 border border-gray-200 hover:border-apm-500 text-gray-700 hover:text-white rounded-full text-xs transition-all shadow-sm whitespace-nowrap">
-                        Show me all MSC vessels scheduled this month
-                    </button>
-
-                    <button onclick="sendSuggestion('Which berths are occupied right now?')"
-                            class="flex-shrink-0 px-2.5 sm:px-3 py-1.5 bg-white hover:bg-apm-500 border border-gray-200 hover:border-apm-500 text-gray-700 hover:text-white rounded-full text-xs transition-all shadow-sm whitespace-nowrap">
-                        Which berths are occupied right now?
-                    </button>
-
-                    <button onclick="sendSuggestion('Show me container moves in the last 24 hours')"
-                            class="flex-shrink-0 px-2.5 sm:px-3 py-1.5 bg-white hover:bg-apm-500 border border-gray-200 hover:border-apm-500 text-gray-700 hover:text-white rounded-full text-xs transition-all shadow-sm whitespace-nowrap">
-                        Show me container moves in the last 24 hours
-                    </button>
+                    <span class="flex-shrink-0 text-[10px] font-normal text-apmt-orange-500 uppercase tracking-widest ml-1">HQ</span>
+                    <button onclick="sendSuggestion('What is our average vessel CMPH this month and how does it compare to target of 25 CMPH?')"
+                            class="query-btn"><i data-lucide="target" class="w-3 h-3"></i>CMPH vs Target</button>
+                    <button onclick="sendSuggestion('Which vessels had the most crane delays this month and what were the root causes?')"
+                            class="query-btn"><i data-lucide="search" class="w-3 h-3"></i>Delay Root Causes</button>
+                    <button onclick="sendSuggestion('Show yard dwell time trends - are containers staying too long? Which categories are worst?')"
+                            class="query-btn"><i data-lucide="hourglass" class="w-3 h-3"></i>Dwell Analysis</button>
+                    <button onclick="sendSuggestion('What is our berth utilization? How many vessels can we handle per day based on current throughput?')"
+                            class="query-btn"><i data-lucide="anchor" class="w-3 h-3"></i>Berth Utilization</button>
+                    <button onclick="sendSuggestion('Show the top 5 best and worst performing vessels by CMPH this month with analysis')"
+                            class="query-btn"><i data-lucide="trophy" class="w-3 h-3"></i>Best/Worst Vessels</button>
+                    <button onclick="sendSuggestion('What percentage of our total delay time is caused by equipment failures vs weather vs vessel issues?')"
+                            class="query-btn"><i data-lucide="percent" class="w-3 h-3"></i>Delay Breakdown %</button>
+                    <button onclick="sendSuggestion('Give me a gate throughput analysis - are we hitting capacity? What is the peak hour pattern?')"
+                            class="query-btn"><i data-lucide="activity" class="w-3 h-3"></i>Gate Throughput</button>
                 </div>
             </div>
 
             <!-- Messages Container -->
             <div id="messages" class="flex-1 overflow-y-auto p-3 sm:p-6">
 
-                <!-- Welcome Message (shown only initially) -->
+                <!-- Welcome Message -->
                 <div id="welcomeMessage" class="flex flex-col items-center justify-center h-full">
                     <div class="text-center px-4">
-                        <div class="w-12 h-12 sm:w-16 sm:h-16 bg-apm-50 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                            <svg class="w-6 h-6 sm:w-8 sm:h-8 text-apm-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
-                            </svg>
-                        </div>
-                        <h2 class="text-lg sm:text-xl font-semibold text-gray-900 mb-2">How can I help you today?</h2>
-                        <p class="text-xs sm:text-sm text-gray-500">Ask me about vessel operations, schedules, or productivity metrics</p>
+                        <p class="text-[10px] text-apmt-orange-500 tracking-widest uppercase mb-2">apmt ai assistant</p>
+                        <h2 class="text-lg sm:text-xl font-normal text-apm-500 mb-1">What can I look up?</h2>
+                        <p class="text-xs sm:text-sm text-gray-400">Vessel operations, yard inventory, gate activity, equipment KPIs</p>
                     </div>
                 </div>
 
             </div>
 
             <!-- Input Area -->
-            <div class="border-t border-gray-200 bg-white px-3 sm:px-6 py-3 sm:py-4">
+            <div class="border-t border-gray-200 bg-white px-3 sm:px-6 py-3 sm:py-4 transition-colors">
                 <form id="chatForm" class="flex gap-2 sm:gap-3">
                     <textarea
                         id="messageInput"
                         rows="1"
                         placeholder="Ask about vessel visits, productivity metrics, schedules..."
-                        class="flex-1 px-3 sm:px-4 py-2 sm:py-3 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-apm-500 focus:border-transparent focus:bg-white resize-none transition-all text-sm sm:text-base"
+                        class="flex-1 px-3 sm:px-4 py-2 sm:py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-apmt-orange-200 focus:border-apmt-orange-500 focus:bg-white text-gray-900 placeholder-gray-400 resize-none transition-all text-sm sm:text-base"
                         style="max-height: 100px;"></textarea>
 
                     <button
                         id="sendButton"
                         type="submit"
                         disabled
-                        class="px-3 sm:px-5 bg-apm-500 hover:bg-apm-600 text-white rounded-lg font-medium transition-all disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm hover:shadow-md min-w-[44px]">
-                        <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                        class="btn-flat btn-flat-primary min-w-[44px] min-h-[44px] disabled:opacity-30 disabled:pointer-events-none">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"></path>
                         </svg>
                     </button>
                 </form>
@@ -210,8 +256,35 @@
         </div>
     </main>
 
+    <!-- Shortcut Modal -->
+    <div id="shortcutModal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/30" onclick="closeShortcutModal()"></div>
+        <div class="relative bg-white rounded-xl shadow-xl max-w-xs mx-auto mt-24 p-5 animate-modal-in">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-sm text-apm-500">Keyboard Shortcuts</span>
+                <button onclick="closeShortcutModal()" class="btn-icon" style="width:24px;height:24px;"><svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+            </div>
+            <div class="space-y-2 text-xs text-gray-600">
+                <div class="flex justify-between"><span>Focus chat</span><kbd class="px-1.5 py-0.5 bg-gray-100 rounded text-[10px]">Ctrl+K</kbd></div>
+                <div class="flex justify-between"><span>Export last response</span><kbd class="px-1.5 py-0.5 bg-gray-100 rounded text-[10px]">Ctrl+E</kbd></div>
+                <div class="flex justify-between"><span>New chat</span><kbd class="px-1.5 py-0.5 bg-gray-100 rounded text-[10px]">Ctrl+N</kbd></div>
+                <div class="flex justify-between"><span>Close modal</span><kbd class="px-1.5 py-0.5 bg-gray-100 rounded text-[10px]">Esc</kbd></div>
+                <div class="flex justify-between"><span>Show shortcuts</span><kbd class="px-1.5 py-0.5 bg-gray-100 rounded text-[10px]">?</kbd></div>
+            </div>
+        </div>
+    </div>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css">
+    <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <script src="script.js"></script>
     <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
         // Update current date
         document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', {
             weekday: 'short',
@@ -275,6 +348,156 @@
                 padding-top: 0.5rem;
                 padding-bottom: 0.5rem;
             }
+        }
+
+        /* Flat buttons */
+        .btn-flat {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+            background: none;
+            color: #9ca3af;
+        }
+        .btn-flat:hover { background: transparent; }
+        .btn-flat-orange { color: #6b7280; }
+        .btn-flat-orange:hover { color: #FF6B35; }
+        .btn-flat-primary {
+            background: #FF6B35;
+            color: #fff;
+            padding: 7px 16px;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+        .btn-flat-primary:hover { background: #E55A28; }
+        .btn-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background: none;
+            color: #9ca3af;
+            transition: background 0.15s, color 0.15s;
+        }
+        .btn-icon:hover { background: transparent; }
+        .btn-icon:disabled, .btn-flat:disabled { opacity: 0.3; cursor: default; pointer-events: none; }
+
+        /* Loading bar */
+        .loading-bar {
+            width: 48px;
+            height: 3px;
+            background: #e5e7eb;
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+        }
+        .loading-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 50%;
+            height: 100%;
+            background: #FF6B35;
+            border-radius: 3px;
+            animation: loadingSlide 1.2s ease-in-out infinite;
+        }
+        @keyframes loadingSlide {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(200%); }
+        }
+
+        /* Quick query buttons */
+        .query-btn {
+            flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 10px;
+            font-size: 11px;
+            color: #4b5563;
+            background: transparent;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            white-space: nowrap;
+            transition: all 0.15s ease;
+            cursor: pointer;
+        }
+        .query-btn:hover {
+            color: #FF6B35;
+            border-color: #FF6B35;
+            background: #FFF3EE;
+        }
+        .query-btn-primary {
+            background: #003C71;
+            color: #fff;
+            border-color: #003C71;
+        }
+        .query-btn-primary:hover {
+            background: #002A4B;
+            color: #fff;
+            border-color: #002A4B;
+        }
+        /* Driver.js tour overrides */
+        .driver-popover,
+        .driver-popover *,
+        .driver-popover-title,
+        .driver-popover-description,
+        .driver-popover-footer,
+        .driver-popover-footer button,
+        .driver-popover-progress-text,
+        .driver-popover-navigation-btns button {
+            font-family: 'Maersk Headline', sans-serif !important;
+        }
+
+        .query-btn-breathe {
+            animation: breathe 2.5s ease-in-out infinite;
+            position: relative;
+        }
+        .query-btn-breathe:hover {
+            animation: none;
+        }
+        @keyframes breathe {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* Modal animation */
+        @keyframes modalIn {
+            from { opacity: 0; transform: translateY(-20px) scale(0.97); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .animate-modal-in {
+            animation: modalIn 0.2s ease-out;
+        }
+
+        /* Expanded content styles */
+        .expanded-content table { font-size: 13px; }
+        .expanded-content .chart-container { max-width: 700px; }
+
+        /* Chart containers */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 560px;
+            margin: 16px 0;
+            padding: 16px 12px 8px;
+            background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .chart-container .apexcharts-canvas {
+            margin: 0 auto;
         }
 
         /* Smooth scrolling */

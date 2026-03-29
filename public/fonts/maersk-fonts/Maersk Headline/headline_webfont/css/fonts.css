@@ -1,0 +1,24 @@
+@font-face {
+    font-family: "MaerskHeadline";
+    src:     url("../fonts/MaerskHeadline-Light.eot?#iefix");
+    src: url("../fonts/MaerskHeadline-Light.eot?#iefix") format("eot"),
+         url("../fonts/MaerskHeadline-Light.woff2") format("woff2"),
+         url("../fonts/MaerskHeadline-Light.woff") format("woff"),
+         url("../fonts/MaerskHeadline-Light.ttf") format("truetype"),
+         url("../fonts/MaerskHeadline-Light.svg") format("svg");
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "MaerskHeadline";
+    src:     url("../fonts/MaerskHeadline-Bold.eot?#iefix");
+    src: url("../fonts/MaerskHeadline-Bold.eot?#iefix") format("eot"),
+         url("../fonts/MaerskHeadline-Bold.woff2") format("woff2"),
+         url("../fonts/mMaerskHeadline-Bold.woff") format("woff"),
+         url("../fonts/MaerskHeadline-Bold.ttf") format("truetype"),
+         url("../fonts/MaerskHeadline-Bold.svg") format("svg");
+    font-weight: 700;
+    font-style: normal;
+}
+

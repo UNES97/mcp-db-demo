@@ -1,17 +1,116 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import OpenAI from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { initializeDatabase, executeQuery } from './database.js';
 import { initializeDatabaseSchema } from './init-database.js';
 import { QUERIES } from './queries.js';
+import * as chatHistory from './chat-history.js';
+import nodemailer from 'nodemailer';
 
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// ─── Cache Layer ───────────────────────────────────────────────────────────────
+
+interface CacheEntry<T> {
+  data: T;
+  expires: number;
+}
+
+class TTLCache<T> {
+  private store = new Map<string, CacheEntry<T>>();
+  private maxSize: number;
+
+  constructor(maxSize = 500) {
+    this.maxSize = maxSize;
+  }
+
+  get(key: string): T | null {
+    const entry = this.store.get(key);
+    if (!entry) return null;
+    if (Date.now() > entry.expires) {
+      this.store.delete(key);
+      return null;
+    }
+    return entry.data;
+  }
+
+  set(key: string, data: T, ttlMs: number): void {
+    // Evict oldest if full
+    if (this.store.size >= this.maxSize) {
+      const oldest = this.store.keys().next().value;
+      if (oldest !== undefined) this.store.delete(oldest);
+    }
+    this.store.set(key, { data, expires: Date.now() + ttlMs });
+  }
+
+  get size(): number { return this.store.size; }
+
+  clear(): void { this.store.clear(); }
+}
+
+// TTLs in ms (configurable via env, values in minutes)
+const TTL = {
+  STATIC:   (parseInt(process.env.CACHE_TTL_STATIC   || '30')) * 60 * 1000,
+  SLOW:     (parseInt(process.env.CACHE_TTL_SLOW     || '10')) * 60 * 1000,
+  LIVE:     (parseInt(process.env.CACHE_TTL_LIVE     || '30')) * 60 * 1000,
+  RESPONSE: (parseInt(process.env.CACHE_TTL_RESPONSE || '30')) * 60 * 1000,
+};
+
+// Which tools get which TTL
+const TOOL_TTL: Record<string, number> = {
+  get_equipment_list:              TTL.STATIC,
+  get_yard_inventory_by_category:  TTL.SLOW,
+  get_yard_inventory_by_block:     TTL.SLOW,
+  get_dwell_time_by_category:      TTL.SLOW,
+  get_vessel_ranking:               TTL.LIVE,
+  get_delay_breakdown:              TTL.LIVE,
+  get_delay_by_vessel:              TTL.LIVE,
+  get_monthly_cmph:                 TTL.LIVE,
+  get_gate_hourly_pattern:          TTL.LIVE,
+  get_berth_utilization:            TTL.LIVE,
+  get_compare_weekly_moves:         TTL.LIVE,
+  get_compare_weekly_productivity:  TTL.LIVE,
+  get_compare_weekly_delays:        TTL.LIVE,
+  get_terminal_overview:            TTL.LIVE,
+  get_vessel_visits:               TTL.LIVE,
+  get_visits_today:                TTL.LIVE,
+  get_visits_by_date:              TTL.LIVE,
+  get_inbound_vessels_current_year:TTL.LIVE,
+  get_inbound_vessels_date_range:  TTL.LIVE,
+  get_vessel_details:              TTL.LIVE,
+  get_vessel_productivity:         TTL.LIVE,
+  get_vessel_cranes:               TTL.LIVE,
+  get_vessel_longest_crane:        TTL.LIVE,
+  get_crane_delays:                TTL.LIVE,
+  get_crane_delays_summary:        TTL.LIVE,
+  get_crane_delays_by_crane:       TTL.LIVE,
+  get_gate_activity:               TTL.LIVE,
+  get_gate_truck_turnaround:       TTL.LIVE,
+  get_equipment_daily_moves:       TTL.LIVE,
+  get_crane_moves_by_vessel:       TTL.LIVE,
+  get_vessel_twin_stats:           TTL.LIVE,
+};
+
+const queryCache = new TTLCache<any>();       // Layer 1: DB query results
+const responseCache = new TTLCache<any>();     // Layer 2: full Claude responses
+
+// Normalize message to a cache key (lowercase, collapse whitespace, trim)
+function normalizeForCache(text: string): string {
+  return text.toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+// Build cache key for a tool call
+function toolCacheKey(name: string, args: any): string {
+  return `${name}:${JSON.stringify(args || {})}`;
+}
+
+// ─── End Cache Layer ───────────────────────────────────────────────────────────
 
 const app = express();
 const port = parseInt(process.env.CHAT_SERVER_PORT || '3000');
@@ -21,172 +120,327 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Initialize OpenAI client (works for both OpenAI and DeepSeek)
-const aiProvider = process.env.AI_PROVIDER || 'DEEPSEEK';
-const openai = new OpenAI({
-  apiKey: aiProvider === 'OPENAI'
-    ? process.env.OPENAI_API_KEY
-    : process.env.DEEPSEEK_API_KEY,
-  baseURL: aiProvider === 'DEEPSEEK'
-    ? 'https://api.deepseek.com'
-    : 'https://api.openai.com/v1',
+// Initialize Anthropic client
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-// Define tools for function calling (matching your MCP tools)
-const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
+// Define tools for function calling
+const tools: Anthropic.Tool[] = [
   {
-    type: 'function',
-    function: {
-      name: 'get_vessel_visits',
-      description: 'Get all vessel visits with their status, planned and executed moves. Returns up to 100 most recent visits, including inbound, arrived, working, complete, departed, and closed vessels.',
-      parameters: {
-        type: 'object',
-        properties: {},
-      },
+    name: 'get_vessel_visits',
+    description: 'Get all vessel visits with their status, planned and executed moves. Returns up to 100 most recent visits, including inbound, arrived, working, complete, departed, and closed vessels.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {},
     },
   },
   {
-    type: 'function',
-    function: {
-      name: 'get_inbound_vessels_current_year',
-      description: 'Get all inbound vessels for the current year with details including ETA, ETD, port hours, and estimated moves.',
-      parameters: {
-        type: 'object',
-        properties: {},
-      },
+    name: 'get_inbound_vessels_current_year',
+    description: 'Get all inbound vessels for the current year with details including ETA, ETD, port hours, and estimated moves.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {},
     },
   },
   {
-    type: 'function',
-    function: {
-      name: 'get_vessel_details',
-      description: 'Get detailed information about a specific vessel visit including service, phase, times (allfast, first lift, first line, ATD), port hours, estimated moves, and idle times.',
-      parameters: {
-        type: 'object',
-        properties: {
-          visitId: {
-            type: 'string',
-            description: 'The visit ID of the vessel (e.g., "TNG001")',
-          },
-        },
-        required: ['visitId'],
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'get_visits_today',
-      description: 'Get all vessel visits scheduled for today at the terminal. Useful for answering questions like "what visits are at Tangier terminal today?"',
-      parameters: {
-        type: 'object',
-        properties: {},
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'get_visits_by_date',
-      description: 'Get all vessel visits scheduled for a specific date at the terminal. Useful for answering questions like "what visits are at the terminal on January 26?" or "show me vessels arriving on 2026-01-27". Accepts dates in YYYY-MM-DD format.',
-      parameters: {
-        type: 'object',
-        properties: {
-          date: {
-            type: 'string',
-            description: 'The date in YYYY-MM-DD format (e.g., "2026-01-26")',
-          },
-        },
-        required: ['date'],
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'get_vessel_productivity',
-      description: 'Get vessel productivity metrics including CMPH (Container Moves Per Hour) for a specific vessel. Returns total moves, working hours, and CMPH calculation.',
-      parameters: {
-        type: 'object',
-        properties: {
-          vesselName: {
-            type: 'string',
-            description: 'The name of the vessel (partial match supported, e.g., "MAERSK")',
-          },
-        },
-        required: ['vesselName'],
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'get_vessel_cranes',
-      description: 'Get all cranes that worked on a specific vessel visit with their first and last move times. Shows crane allocation and timing.',
-      parameters: {
-        type: 'object',
-        properties: {
-          visitId: {
-            type: 'string',
-            description: 'The visit ID of the vessel (e.g., "TNG001")',
-          },
-        },
-        required: ['visitId'],
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'get_vessel_longest_crane',
-      description: 'Get the crane with the longest estimated move time for vessels currently in WORKING phase. Useful for identifying the critical path crane.',
-      parameters: {
-        type: 'object',
-        properties: {},
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'get_inbound_vessels_date_range',
-      description: 'Get all inbound vessels within a specific date range. Returns vessel details with ETA, ETD, port hours, and estimated moves.',
-      parameters: {
-        type: 'object',
-        properties: {
-          startDate: {
-            type: 'string',
-            description: 'Start date in YYYY-MM-DD format',
-          },
-          endDate: {
-            type: 'string',
-            description: 'End date in YYYY-MM-DD format',
-          },
-        },
-        required: ['startDate', 'endDate'],
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'get_crane_delays',
-      description: 'Get historical crane delay information including delay codes, descriptions, and durations. Can be filtered by vessel visit ID.',
-      parameters: {
-        type: 'object',
-        properties: {
-          visitId: {
-            type: 'string',
-            description: 'Optional vessel visit ID to filter delays. If not provided, returns all delays.',
-          },
+    name: 'get_vessel_details',
+    description: 'Get detailed information about a specific vessel visit including service, phase, times (allfast, first lift, first line, ATD), port hours, estimated moves, and idle times.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        visitId: {
+          type: 'string',
+          description: 'The visit ID of the vessel (e.g., "TNG001")',
         },
       },
+      required: ['visitId'],
+    },
+  },
+  {
+    name: 'get_visits_today',
+    description: 'Get all vessel visits scheduled for today at the terminal. Useful for answering questions like "what visits are at the terminal today?"',
+    input_schema: {
+      type: 'object' as const,
+      properties: {},
+    },
+  },
+  {
+    name: 'get_visits_by_date',
+    description: 'Get all vessel visits scheduled for a specific date at the terminal. Accepts dates in YYYY-MM-DD format.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        date: {
+          type: 'string',
+          description: 'The date in YYYY-MM-DD format (e.g., "2026-01-26")',
+        },
+      },
+      required: ['date'],
+    },
+  },
+  {
+    name: 'get_vessel_productivity',
+    description: 'Get vessel productivity metrics including CMPH (Container Moves Per Hour) for a specific vessel. Returns total moves, working hours, and CMPH calculation.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        vesselName: {
+          type: 'string',
+          description: 'The name of the vessel (partial match supported, e.g., "MAERSK")',
+        },
+      },
+      required: ['vesselName'],
+    },
+  },
+  {
+    name: 'get_vessel_cranes',
+    description: 'Get all cranes that worked on a specific vessel visit with their first and last move times. Shows crane allocation and timing.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        visitId: {
+          type: 'string',
+          description: 'The visit ID of the vessel (e.g., "TNG001")',
+        },
+      },
+      required: ['visitId'],
+    },
+  },
+  {
+    name: 'get_vessel_longest_crane',
+    description: 'Get the crane with the longest estimated move time for vessels currently in WORKING phase. Useful for identifying the critical path crane.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {},
+    },
+  },
+  {
+    name: 'get_inbound_vessels_date_range',
+    description: 'Get all inbound vessels within a specific date range. Returns vessel details with ETA, ETD, port hours, and estimated moves.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        startDate: {
+          type: 'string',
+          description: 'Start date in YYYY-MM-DD format',
+        },
+        endDate: {
+          type: 'string',
+          description: 'End date in YYYY-MM-DD format',
+        },
+      },
+      required: ['startDate', 'endDate'],
+    },
+  },
+  {
+    name: 'get_crane_delays',
+    description: 'Get historical crane delay records with timestamps, durations, delay codes, categories, and vessel names. Can be filtered by vessel visit ID.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        visitId: {
+          type: 'string',
+          description: 'Optional vessel visit ID to filter delays. If not provided, returns all delays.',
+        },
+      },
+    },
+  },
+  {
+    name: 'get_crane_delays_summary',
+    description: 'Get crane delay summary grouped by delay category and type. Shows occurrence count, total minutes, and average duration per delay type. Great for charts.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {},
+    },
+  },
+  {
+    name: 'get_crane_delays_by_crane',
+    description: 'Get crane delay totals per crane. Shows which cranes have the most delays, total delay minutes, and average delay duration.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {},
+    },
+  },
+  {
+    name: 'get_vessel_ranking',
+    description: 'Get all vessels ranked by CMPH (productivity) this month. Returns best and worst performers with moves, hours, and CMPH. Use for "best/worst vessels", "top performers", "vessel ranking".',
+    input_schema: { type: 'object' as const, properties: {} },
+  },
+  {
+    name: 'get_delay_breakdown',
+    description: 'Get delay breakdown by category with percentage of total. Shows equipment vs weather vs vessel vs terminal delays. Use for "delay breakdown", "delay percentages", "what causes delays".',
+    input_schema: { type: 'object' as const, properties: {} },
+  },
+  {
+    name: 'get_delay_by_vessel',
+    description: 'Get top vessels with most delays this month, showing delay count, total minutes, and which categories affected them. Use for "delay root causes", "which vessels had most delays".',
+    input_schema: { type: 'object' as const, properties: {} },
+  },
+  {
+    name: 'get_monthly_cmph',
+    description: 'Get average, min, and max CMPH for the current month across all vessels. Use for "monthly productivity", "CMPH vs target", "average CMPH".',
+    input_schema: { type: 'object' as const, properties: {} },
+  },
+  {
+    name: 'get_gate_hourly_pattern',
+    description: 'Get gate throughput by hour of day (last 7 days average). Shows transactions, receives, deliveries, and turnaround per hour. Use for "gate throughput", "peak hours", "gate capacity".',
+    input_schema: { type: 'object' as const, properties: {} },
+  },
+  {
+    name: 'get_berth_utilization',
+    description: 'Get daily vessel count at terminal for the last 30 days. Shows vessels per day, working count, and completed count. Use for "berth utilization", "how many vessels per day".',
+    input_schema: { type: 'object' as const, properties: {} },
+  },
+  {
+    name: 'get_compare_weekly_moves',
+    description: 'Compare this week vs last week total moves (discharge and load). Returns both periods in one result. Use this for weekly move comparisons.',
+    input_schema: { type: 'object' as const, properties: {} },
+  },
+  {
+    name: 'get_compare_weekly_productivity',
+    description: 'Compare this week vs last week vessel productivity (CMPH) per vessel. Returns both periods with moves, hours, and CMPH. Use this for weekly productivity comparisons.',
+    input_schema: { type: 'object' as const, properties: {} },
+  },
+  {
+    name: 'get_compare_weekly_delays',
+    description: 'Compare this week vs last week crane delays by category. Returns both periods with occurrence count and total minutes. Use this for weekly delay comparisons.',
+    input_schema: { type: 'object' as const, properties: {} },
+  },
+  {
+    name: 'get_terminal_overview',
+    description: 'Get a comprehensive terminal overview for today. Returns ALL key data in one call: vessel visits with moves, hourly move distribution, yard inventory summary, gate activity, crane delays by category, and crane productivity (CMPH). Use this when asked for a terminal overview, daily report, or dashboard summary.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {},
+    },
+  },
+  {
+    name: 'get_yard_inventory_by_category',
+    description: 'Get current yard inventory breakdown by category (IMPORT/EXPORT/TRANSSHIP) and reefer/dry. Shows units and TEUs in yard.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {},
+    },
+  },
+  {
+    name: 'get_yard_inventory_by_block',
+    description: 'Get current yard inventory by yard block. Shows units, TEUs, reefer count, and hazardous count per block and category.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {},
+    },
+  },
+  {
+    name: 'get_gate_activity',
+    description: 'Get gate truck transaction summary (receive/delivery counts, reefer, hazardous) for a specific date. Defaults to today.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        date: {
+          type: 'string',
+          description: 'Date in YYYY-MM-DD format. Defaults to today if not provided.',
+        },
+      },
+    },
+  },
+  {
+    name: 'get_gate_truck_turnaround',
+    description: 'Get individual truck turnaround times (time in, time out, duration in minutes) for a specific date. Defaults to today.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        date: {
+          type: 'string',
+          description: 'Date in YYYY-MM-DD format. Defaults to today if not provided.',
+        },
+      },
+    },
+  },
+  {
+    name: 'get_equipment_list',
+    description: 'Get list of all active terminal equipment (cranes, RTGs, reach stackers, etc.) with their types.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {},
+    },
+  },
+  {
+    name: 'get_equipment_daily_moves',
+    description: 'Get daily move counts for a specific equipment type (QC, RTG, RS, FLT) within a date range.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        equipmentType: {
+          type: 'string',
+          description: 'Equipment type: "QC" (quay crane), "RTG" (rubber-tired gantry), "RST" (reach stacker), "FLT" (forklift/empty handler)',
+        },
+        startDate: {
+          type: 'string',
+          description: 'Start date in YYYY-MM-DD format',
+        },
+        endDate: {
+          type: 'string',
+          description: 'End date in YYYY-MM-DD format',
+        },
+      },
+      required: ['equipmentType', 'startDate', 'endDate'],
+    },
+  },
+  {
+    name: 'get_dwell_time_by_category',
+    description: 'Get average and maximum dwell time (in days) for containers currently in the yard, grouped by category and reefer/dry.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {},
+    },
+  },
+  {
+    name: 'get_crane_moves_by_vessel',
+    description: 'Get detailed crane move breakdown (discharge vs load, 20ft vs 40ft) for a specific vessel visit.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        visitId: {
+          type: 'string',
+          description: 'The vessel visit ID',
+        },
+      },
+      required: ['visitId'],
+    },
+  },
+  {
+    name: 'get_vessel_twin_stats',
+    description: 'Get twin lift statistics for a vessel visit. Shows total moves, twin moves count, and twin percentage.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        visitId: {
+          type: 'string',
+          description: 'The vessel visit ID',
+        },
+      },
+      required: ['visitId'],
     },
   },
 ];
 
-// Execute database tool functions
+// Execute database tool functions (with Layer 1 cache)
 async function executeToolFunction(name: string, args: any): Promise<any> {
+  const cacheKey = toolCacheKey(name, args);
+  const cached = queryCache.get(cacheKey);
+  if (cached) {
+    console.log(`  ⚡ Cache hit: ${name}`);
+    return cached;
+  }
+
+  const result = await executeToolFunctionRaw(name, args);
+  const ttl = TOOL_TTL[name] || TTL.LIVE;
+  queryCache.set(cacheKey, result, ttl);
+  return result;
+}
+
+async function executeToolFunctionRaw(name: string, args: any): Promise<any> {
   try {
     switch (name) {
       case 'get_vessel_visits':
@@ -218,9 +472,100 @@ async function executeToolFunction(name: string, args: any): Promise<any> {
         return await executeQuery(QUERIES.INBOUND_VESSELS_DATE_RANGE, [args.startDate, args.endDate]);
 
       case 'get_crane_delays':
-        // If visitId is provided, use it; otherwise pass null for both parameters
         const visitId = args.visitId || null;
         return await executeQuery(QUERIES.CRANE_DELAYS_HISTORICAL, [visitId, visitId]);
+
+      case 'get_crane_delays_summary':
+        return await executeQuery(QUERIES.CRANE_DELAYS_SUMMARY);
+
+      case 'get_crane_delays_by_crane':
+        return await executeQuery(QUERIES.CRANE_DELAYS_BY_CRANE);
+
+      case 'get_vessel_ranking':
+        return await executeQuery(QUERIES.HQ_VESSEL_RANKING);
+
+      case 'get_delay_breakdown':
+        return await executeQuery(QUERIES.HQ_DELAY_BREAKDOWN);
+
+      case 'get_delay_by_vessel':
+        return await executeQuery(QUERIES.HQ_DELAY_BY_VESSEL);
+
+      case 'get_monthly_cmph':
+        return await executeQuery(QUERIES.HQ_MONTHLY_CMPH);
+
+      case 'get_gate_hourly_pattern':
+        return await executeQuery(QUERIES.HQ_GATE_HOURLY);
+
+      case 'get_berth_utilization':
+        return await executeQuery(QUERIES.HQ_BERTH_UTILIZATION);
+
+      case 'get_compare_weekly_moves':
+        return await executeQuery(QUERIES.COMPARE_WEEKLY_MOVES);
+
+      case 'get_compare_weekly_productivity':
+        return await executeQuery(QUERIES.COMPARE_WEEKLY_PRODUCTIVITY);
+
+      case 'get_compare_weekly_delays':
+        return await executeQuery(QUERIES.COMPARE_WEEKLY_DELAYS);
+
+      case 'get_terminal_overview':
+        const [ovVessels, ovMoves, ovYard, ovGate, ovDelays, ovCranes] = await Promise.all([
+          executeQuery(QUERIES.OVERVIEW_VESSELS_TODAY),
+          executeQuery(QUERIES.OVERVIEW_MOVES_BY_HOUR),
+          executeQuery(QUERIES.OVERVIEW_YARD_SUMMARY),
+          executeQuery(QUERIES.OVERVIEW_GATE_SUMMARY),
+          executeQuery(QUERIES.OVERVIEW_DELAYS_TODAY),
+          executeQuery(QUERIES.OVERVIEW_CRANE_PRODUCTIVITY),
+        ]);
+        return {
+          vessels_at_terminal: ovVessels,
+          moves_by_hour: ovMoves,
+          yard_summary: ovYard,
+          gate_summary: ovGate[0] || {},
+          delays_by_category: ovDelays,
+          crane_productivity: ovCranes,
+        };
+
+      case 'get_yard_inventory_by_category':
+        return await executeQuery(QUERIES.YARD_INVENTORY_BY_CATEGORY);
+
+      case 'get_yard_inventory_by_block':
+        return await executeQuery(QUERIES.YARD_INVENTORY_BY_BLOCK);
+
+      case 'get_gate_activity':
+        const gateDate = args.date || null;
+        return await executeQuery(QUERIES.GATE_ACTIVITY, [gateDate, gateDate]);
+
+      case 'get_gate_truck_turnaround':
+        const ttDate = args.date || null;
+        return await executeQuery(QUERIES.GATE_TRUCK_TURNAROUND, [ttDate]);
+
+      case 'get_equipment_list':
+        return await executeQuery(QUERIES.EQUIPMENT_LIST);
+
+      case 'get_equipment_daily_moves':
+        return await executeQuery(QUERIES.EQUIPMENT_DAILY_MOVES, [args.equipmentType, args.startDate, args.endDate]);
+
+      case 'get_dwell_time_by_category':
+        return await executeQuery(QUERIES.DWELL_TIME_BY_CATEGORY);
+
+      case 'get_crane_moves_by_vessel':
+        return await executeQuery(QUERIES.CRANE_MOVES_BY_VESSEL, [args.visitId]);
+
+      case 'get_vessel_twin_stats':
+        return await executeQuery(QUERIES.VESSEL_TWIN_STATS, [args.visitId]);
+
+      case 'get_kpi_active_vessels':
+        return await executeQuery(QUERIES.KPI_ACTIVE_VESSELS);
+
+      case 'get_kpi_moves_today':
+        return await executeQuery(QUERIES.KPI_TOTAL_MOVES_TODAY);
+
+      case 'get_kpi_yard_teus':
+        return await executeQuery(QUERIES.KPI_YARD_TEUS);
+
+      case 'get_kpi_avg_turnaround':
+        return await executeQuery(QUERIES.KPI_AVG_TURNAROUND);
 
       default:
         return { error: `Unknown function: ${name}` };
@@ -231,90 +576,160 @@ async function executeToolFunction(name: string, args: any): Promise<any> {
   }
 }
 
+// System prompt for Claude
+const SYSTEM_PROMPT = `APMT Terminal AI. Today: ${new Date().toISOString().slice(0, 10)}.
+
+RULES: Be direct. Use tools for data. Tables + charts for results. No narration.
+
+IMPORTANT — TOOL SELECTION:
+- For weekly comparisons: use get_compare_weekly_* tools (one call, both periods)
+- For vessel rankings/best/worst: use get_vessel_ranking (one call, all data)
+- For delay analysis: use get_delay_breakdown or get_delay_by_vessel (one call each)
+- For monthly CMPH: use get_monthly_cmph (one call)
+- For gate patterns: use get_gate_hourly_pattern (one call)
+- For berth stats: use get_berth_utilization (one call)
+- For terminal overview: use get_terminal_overview (one call, all sections)
+- NEVER call multiple tools when a dedicated combined tool exists
+- Call tools in PARALLEL when possible (multiple tool_use blocks in one response)
+
+DATES: Resolve "last week", "this month", etc. to YYYY-MM-DD before calling tools.
+
+CHARTS: Include when data has 3+ comparable items:
+\`\`\`chart
+{"type":"bar","title":"Title","labels":["A","B"],"datasets":[{"label":"Series","data":[1,2]}]}
+\`\`\`
+Types: bar, line, pie, doughnut, horizontalBar. Keep labels under 15 chars.
+
+COMPARISONS: Use side-by-side table (Metric | Period 1 | Period 2 | Change %) + grouped bar chart.
+
+FOLLOW-UPS: End every response with:
+\`\`\`followups
+["Specific question 1","Specific question 2","Specific question 3"]
+\`\`\`
+Reference actual data from your response. Keep under 60 chars each.`;
+
 // Chat endpoint
 app.post('/api/chat', async (req, res) => {
   try {
-    const { messages } = req.body;
+    const { messages, conversationId } = req.body;
 
     if (!messages || !Array.isArray(messages)) {
       return res.status(400).json({ error: 'Messages array is required' });
     }
 
-    // Add system message if not present
-    const systemMessage = {
-      role: 'system',
-      content: `You are an AI assistant for APM Terminal operations. You help users query vessel visit data, productivity metrics, and terminal operations.
+    // Layer 2: Check response cache (only for single-turn — last user message)
+    const lastUserMsg = [...messages].reverse().find((m: any) => m.role === 'user');
+    const responseCacheKey = lastUserMsg ? normalizeForCache(lastUserMsg.content) : null;
 
-IMPORTANT INSTRUCTIONS:
-- Be PRECISE and DIRECT in your responses
-- Provide the RIGHT ANSWER immediately without explaining your process
-- Use available functions to retrieve accurate data from the database
-- Present data in clear, structured format (tables, lists, or bullet points)
-- Include relevant context and units (CMPH, hours, minutes, container counts)
-- DO NOT narrate what you're doing ("I will now...", "Let me check...", "First I'll...")
-- Focus on answering the user's question with the data they need
+    if (responseCacheKey) {
+      const cachedResponse = responseCache.get(responseCacheKey);
+      if (cachedResponse) {
+        console.log(`⚡ Response cache hit: "${responseCacheKey.slice(0, 50)}..."`);
+        return res.json(cachedResponse);
+      }
+    }
 
-When asked about "today" or "current" data:
-- Automatically identify today's date (January 24, 2026) and filter accordingly
-- Present only relevant, current information
+    // Convert messages to Anthropic format (filter out system messages)
+    const claudeMessages: Anthropic.MessageParam[] = messages
+      .filter((m: any) => m.role !== 'system')
+      .map((m: any) => ({
+        role: m.role as 'user' | 'assistant',
+        content: m.content,
+      }));
 
-Format responses professionally:
-- Use markdown tables for multiple data points
-- Use bullet points for lists
-- Include vessel names, IDs, timestamps, and metrics clearly
-- Highlight critical information (delays, issues, urgent items)`,
-    };
-
-    const allMessages = messages[0]?.role === 'system'
-      ? messages
-      : [systemMessage, ...messages];
-
-    // Call OpenAI/DeepSeek API
-    let response = await openai.chat.completions.create({
-      model: aiProvider === 'OPENAI' ? 'gpt-4o' : 'deepseek-chat',
-      messages: allMessages,
+    // Call Claude API
+    let response = await anthropic.messages.create({
+      model: process.env.CLAUDE_MODEL || 'claude-sonnet-4-20250514',
+      max_tokens: 4096,
+      system: SYSTEM_PROMPT,
+      messages: claudeMessages,
       tools: tools,
-      tool_choice: 'auto',
     });
 
-    let responseMessage = response.choices[0].message;
+    // Handle tool use in a loop (Claude may call multiple tools)
+    while (response.stop_reason === 'tool_use') {
+      const toolUseBlocks = response.content.filter(
+        (block): block is Anthropic.ToolUseBlock => block.type === 'tool_use'
+      );
 
-    // Handle function calls
-    const toolCalls = responseMessage.tool_calls;
-    if (toolCalls && toolCalls.length > 0) {
-      // Add assistant's message with tool calls to conversation
-      allMessages.push(responseMessage);
+      // Add assistant response to messages
+      claudeMessages.push({
+        role: 'assistant',
+        content: response.content,
+      });
 
-      // Execute each tool call
-      for (const toolCall of toolCalls) {
-        const functionName = toolCall.function.name;
-        const functionArgs = JSON.parse(toolCall.function.arguments);
+      // Execute each tool and collect results
+      const toolResults: Anthropic.ToolResultBlockParam[] = [];
+      for (const toolUse of toolUseBlocks) {
+        console.log(`Executing function: ${toolUse.name} with args:`, toolUse.input);
 
-        console.log(`Executing function: ${functionName} with args:`, functionArgs);
+        const functionResult = await executeToolFunction(toolUse.name, toolUse.input);
 
-        const functionResult = await executeToolFunction(functionName, functionArgs);
-
-        // Add function result to conversation
-        allMessages.push({
-          role: 'tool',
-          tool_call_id: toolCall.id,
+        toolResults.push({
+          type: 'tool_result',
+          tool_use_id: toolUse.id,
           content: JSON.stringify(functionResult),
         });
       }
 
-      // Get final response from the model
-      const secondResponse = await openai.chat.completions.create({
-        model: aiProvider === 'OPENAI' ? 'gpt-4o' : 'deepseek-chat',
-        messages: allMessages,
+      // Add tool results to messages
+      claudeMessages.push({
+        role: 'user',
+        content: toolResults,
       });
 
-      responseMessage = secondResponse.choices[0].message;
+      // Get next response
+      response = await anthropic.messages.create({
+        model: process.env.CLAUDE_MODEL || 'claude-sonnet-4-20250514',
+        max_tokens: 4096,
+        system: SYSTEM_PROMPT,
+        messages: claudeMessages,
+        tools: tools,
+      });
     }
 
-    res.json({
-      message: responseMessage.content,
+    // Extract text from response
+    let textContent = response.content
+      .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+      .map(block => block.text)
+      .join('\n');
+
+    // Parse follow-up suggestions
+    let followups: string[] = [];
+    const followupMatch = textContent.match(/```followups\s*\n([\s\S]*?)```/);
+    if (followupMatch) {
+      try {
+        followups = JSON.parse(followupMatch[1].trim());
+      } catch (e) { /* ignore malformed followups */ }
+      textContent = textContent.replace(/```followups\s*\n[\s\S]*?```/, '').trim();
+    }
+
+    // Persist to conversation history
+    if (conversationId && lastUserMsg) {
+      try {
+        chatHistory.addMessage(conversationId, 'user', lastUserMsg.content);
+        chatHistory.addMessage(conversationId, 'assistant', textContent);
+        // Auto-title from first user message
+        const msgs = chatHistory.getMessages(conversationId);
+        if (msgs.length <= 2) {
+          chatHistory.updateTitle(conversationId, lastUserMsg.content.slice(0, 80));
+        }
+      } catch (e) { console.error('History save error:', e); }
+    }
+
+    const responsePayload = {
+      message: textContent,
+      followups,
       usage: response.usage,
-    });
+      cached: false,
+    };
+
+    // Store in response cache
+    if (responseCacheKey) {
+      responseCache.set(responseCacheKey, { ...responsePayload, cached: true }, TTL.RESPONSE);
+    }
+
+    res.json(responsePayload);
 
   } catch (error: any) {
     console.error('Chat API error:', error);
@@ -324,13 +739,238 @@ Format responses professionally:
   }
 });
 
+// Streaming chat endpoint (SSE)
+app.post('/api/chat/stream', async (req, res) => {
+  const { messages, conversationId } = req.body;
+
+  if (!messages || !Array.isArray(messages)) {
+    return res.status(400).json({ error: 'Messages array is required' });
+  }
+
+  // SSE headers
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  const sendSSE = (type: string, data: any) => {
+    res.write(`data: ${JSON.stringify({ type, ...data })}\n\n`);
+  };
+
+  let aborted = false;
+  req.on('close', () => { aborted = true; });
+
+  try {
+    const lastUserMsg = [...messages].reverse().find((m: any) => m.role === 'user');
+
+    // Check response cache
+    const responseCacheKey = lastUserMsg ? normalizeForCache(lastUserMsg.content) : null;
+    if (responseCacheKey) {
+      const cached = responseCache.get(responseCacheKey);
+      if (cached) {
+        sendSSE('text', { content: cached.message });
+        sendSSE('done', { followups: cached.followups || [], usage: cached.usage, cached: true });
+        return res.end();
+      }
+    }
+
+    const claudeMessages: Anthropic.MessageParam[] = messages
+      .filter((m: any) => m.role !== 'system')
+      .map((m: any) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
+
+    let fullText = '';
+    let continueLoop = true;
+
+    while (continueLoop && !aborted) {
+      const stream = anthropic.messages.stream({
+        model: process.env.CLAUDE_MODEL || 'claude-sonnet-4-20250514',
+        max_tokens: 4096,
+        system: SYSTEM_PROMPT,
+        messages: claudeMessages,
+        tools: tools,
+      });
+
+      // Stream text deltas
+      stream.on('text', (text) => {
+        if (!aborted) {
+          fullText += text;
+          sendSSE('text', { content: text });
+        }
+      });
+
+      const finalMessage = await stream.finalMessage();
+
+      if (finalMessage.stop_reason === 'tool_use') {
+        const toolUseBlocks = finalMessage.content.filter(
+          (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use'
+        );
+
+        // Notify frontend which tools are running
+        sendSSE('tool_status', { tools: toolUseBlocks.map(t => t.name) });
+
+        claudeMessages.push({ role: 'assistant', content: finalMessage.content });
+
+        const toolResults: Anthropic.ToolResultBlockParam[] = [];
+        for (const toolUse of toolUseBlocks) {
+          if (aborted) break;
+          console.log(`  Streaming tool: ${toolUse.name}`);
+          const result = await executeToolFunction(toolUse.name, toolUse.input);
+          toolResults.push({ type: 'tool_result', tool_use_id: toolUse.id, content: JSON.stringify(result) });
+        }
+
+        claudeMessages.push({ role: 'user', content: toolResults });
+        fullText = ''; // Reset — new stream will produce the full answer
+      } else {
+        continueLoop = false;
+      }
+    }
+
+    if (aborted) return;
+
+    // Parse followups
+    let followups: string[] = [];
+    const followupMatch = fullText.match(/```followups\s*\n([\s\S]*?)```/);
+    if (followupMatch) {
+      try { followups = JSON.parse(followupMatch[1].trim()); } catch (e) {}
+      fullText = fullText.replace(/```followups\s*\n[\s\S]*?```/, '').trim();
+    }
+
+    // Persist to history
+    if (conversationId && lastUserMsg) {
+      try {
+        chatHistory.addMessage(conversationId, 'user', lastUserMsg.content);
+        chatHistory.addMessage(conversationId, 'assistant', fullText);
+        const msgs = chatHistory.getMessages(conversationId);
+        if (msgs.length <= 2) chatHistory.updateTitle(conversationId, lastUserMsg.content.slice(0, 80));
+      } catch (e) {}
+    }
+
+    // Cache the response
+    if (responseCacheKey) {
+      responseCache.set(responseCacheKey, { message: fullText, followups, usage: null, cached: true }, TTL.RESPONSE);
+    }
+
+    sendSSE('done', { followups, usage: null, cached: false });
+    res.end();
+
+  } catch (error: any) {
+    if (!aborted) {
+      sendSSE('error', { message: error.message || 'An error occurred' });
+      res.end();
+    }
+  }
+});
+
+// Email report endpoint
+app.post('/api/send-report', async (req, res) => {
+  const { email, html, subject } = req.body;
+
+  if (!email || !html) {
+    return res.status(400).json({ error: 'Email and HTML content are required' });
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ error: 'Invalid email address' });
+  }
+
+  const smtpHost = process.env.SMTP_HOST;
+  if (!smtpHost) {
+    return res.status(500).json({ error: 'SMTP not configured. Add SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS to .env' });
+  }
+
+  try {
+    const transporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: process.env.SMTP_PORT === '465',
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    });
+
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM || `APMT Reports <${process.env.SMTP_USER}>`,
+      to: email,
+      subject: subject || `APMT Operations Report — ${new Date().toLocaleDateString()}`,
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:800px;margin:0 auto;padding:20px;">
+          <div style="border-bottom:3px solid #FF6B35;padding-bottom:12px;margin-bottom:20px;">
+            <div style="font-size:18px;color:#003C71;">APMT Operations Report</div>
+            <div style="font-size:12px;color:#666;">${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
+          </div>
+          <div style="font-size:13px;line-height:1.7;color:#1a1a1a;">${html}</div>
+          <div style="margin-top:30px;padding-top:12px;border-top:1px solid #e0e0e0;font-size:11px;color:#999;text-align:center;">
+            Generated by APMT Operations Intelligence Platform
+          </div>
+        </div>
+      `,
+    });
+
+    res.json({ status: 'sent' });
+  } catch (error: any) {
+    console.error('Email send error:', error);
+    res.status(500).json({ error: error.message || 'Failed to send email' });
+  }
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
-    provider: aiProvider,
+    provider: 'Claude',
+    model: process.env.CLAUDE_MODEL || 'claude-sonnet-4-20250514',
+    cache: {
+      queryEntries: queryCache.size,
+      responseEntries: responseCache.size,
+    },
     timestamp: new Date().toISOString()
   });
+});
+
+// KPI endpoint
+app.get('/api/kpis', async (req, res) => {
+  try {
+    const [vessels, moves, yard, turnaround] = await Promise.all([
+      executeToolFunction('get_kpi_active_vessels', {}),
+      executeToolFunction('get_kpi_moves_today', {}),
+      executeToolFunction('get_kpi_yard_teus', {}),
+      executeToolFunction('get_kpi_avg_turnaround', {}),
+    ]);
+    res.json({
+      activeVessels: vessels[0]?.count || 0,
+      totalMovesToday: moves[0]?.count || 0,
+      yardTeus: yard[0]?.teus || 0,
+      avgTurnaround: turnaround[0]?.avg_minutes || 0,
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Conversation history endpoints
+app.post('/api/conversations', (req, res) => {
+  const id = chatHistory.createConversation();
+  res.json({ id });
+});
+
+app.get('/api/conversations', (req, res) => {
+  res.json(chatHistory.getConversations());
+});
+
+app.get('/api/conversations/:id', (req, res) => {
+  const messages = chatHistory.getMessages(req.params.id);
+  res.json(messages);
+});
+
+app.delete('/api/conversations/:id', (req, res) => {
+  chatHistory.deleteConversation(req.params.id);
+  res.json({ status: 'deleted' });
+});
+
+// Cache management
+app.delete('/api/cache', (req, res) => {
+  queryCache.clear();
+  responseCache.clear();
+  console.log('🗑️  Cache cleared');
+  res.json({ status: 'cleared' });
 });
 
 // Start server
@@ -344,20 +984,16 @@ async function startServer() {
     console.log('✓ Database connected');
 
     // Check API key
-    const apiKey = aiProvider === 'OPENAI'
-      ? process.env.OPENAI_API_KEY
-      : process.env.DEEPSEEK_API_KEY;
-
-    if (!apiKey) {
-      throw new Error(`${aiProvider}_API_KEY is not set in .env file`);
+    if (!process.env.ANTHROPIC_API_KEY) {
+      throw new Error('ANTHROPIC_API_KEY is not set in .env file');
     }
-    console.log(`✓ ${aiProvider} API key configured`);
+    console.log('✓ Anthropic API key configured');
 
     // Start Express server
     app.listen(port, '0.0.0.0', () => {
-      console.log(`\n🚀 APM Terminal Chat Server running!`);
+      console.log(`\n🚀 COMPASS Terminal Chat Server running!`);
       console.log(`   URL: http://0.0.0.0:${port}`);
-      console.log(`   AI Provider: ${aiProvider}`);
+      console.log(`   AI Provider: Claude (${process.env.CLAUDE_MODEL || 'claude-sonnet-4-20250514'})`);
       console.log(`\n   Server is accessible from outside the container!\n`);
     });
 

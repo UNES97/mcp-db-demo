@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Read(//Applications/MAMP/Library/bin/**)",
+      "Read(//Applications/MAMP/**)",
+      "Bash(npm uninstall:*)",
+      "Bash(lsof -ti:3000)",
+      "Bash(curl -s http://localhost:3000/api/health)",
+      "Bash(python3 -m json.tool)",
+      "Bash(curl -sI \"https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js\")",
+      "Bash(/Applications/MAMP/Library/bin/mysql --host=localhost --port=8889 --user=root --password=root -e \"SELECT gkey, id, full_name FROM compass_db.xps_che WHERE full_name LIKE ''%QC%'' LIMIT 10;\")",
+      "Bash(/Applications/MAMP/Library/bin/mysql --host=localhost --port=8889 --user=root --password=root -e \"SELECT gkey, id, full_name, kind_enum FROM compass_db.xps_che LIMIT 20;\")",
+      "Bash(/Applications/MAMP/Library/bin/mysql --host=localhost --port=8889 --user=root --password=root -e \"SELECT id, phase, ata FROM compass_db.argo_carrier_visit WHERE phase IN \\(''40WORKING'',''50COMPLETE'',''60DEPARTED'',''70CLOSED''\\) AND ata IS NOT NULL ORDER BY ata DESC LIMIT 15;\")",
+      "Read(//private/tmp/claude-501/-Applications-MAMP-htdocs-AIs/mcp-db-demo/30f3feff-a083-44e9-991e-553e6373de84/tasks/**)",
+      "Bash(/Applications/MAMP/Library/bin/mysql --host=localhost --port=8889 --user=root --password=root -e \"SELECT COUNT\\(*\\) FROM compass_db.vsl_crane_statistics_delays;\")",
+      "Bash(/Applications/MAMP/Library/bin/mysql --host=localhost --port=8889 --user=root --password=root -e \"SELECT COUNT\\(*\\) AS delays FROM compass_db.vsl_crane_statistics_delays; SELECT COUNT\\(*\\) AS delay_types FROM compass_db.ref_crane_delay_types; SELECT COUNT\\(*\\) AS crane_stats FROM compass_db.vsl_crane_statistics;\")",
+      "Bash(/Applications/MAMP/Library/bin/mysql --host=localhost --port=8889 --user=root --password=root -e \"SELECT MIN\\(delay_date\\) AS earliest, MAX\\(delay_date\\) AS latest, COUNT\\(*\\) AS total FROM compass_db.vsl_crane_statistics_delays;\")",
+      "Bash(/Applications/MAMP/Library/bin/mysqldump --host=localhost --port=8889 --user=root --password=root --no-create-info --compact compass_db vsl_crane_statistics vsl_crane_statistics_delays)",
+      "Bash(/Applications/MAMP/Library/bin/mysqldump --host=localhost --port=8889 --user=root --password=root --no-create-info --compact compass_db ref_crane_delay_types vsl_crane_statistics vsl_crane_statistics_delays)",
+      "Read(//tmp/**)",
+      "Read(//private/tmp/**)",
+      "Bash(/Applications/MAMP/Library/bin/mysql --host=localhost --port=8889 --user=root --password=root -e \"SELECT COUNT\\(*\\) AS delays, MIN\\(delay_date\\) AS earliest, MAX\\(delay_date\\) AS latest FROM compass_db.vsl_crane_statistics_delays;\")",
+      "Bash(curl -s http://localhost:3000/api/kpis)",
+      "Bash(curl -s http://localhost:3000/api/conversations)",
+      "Bash(/Applications/MAMP/Library/bin/mysql --host=localhost --port=8889 --user=root --password=root -e \"DESCRIBE compass_db.vsl_vessel_visit_details;\")",
+      "Bash(grep -c \"name: ''get_\" /Applications/MAMP/htdocs/AIs/mcp-db-demo/src/chat-server.ts)"
+    ]
+  }
+}
