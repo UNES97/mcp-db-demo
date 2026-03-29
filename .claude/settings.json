@@ -29,7 +29,9 @@
       "Bash(/Applications/MAMP/Library/bin/mysql --host=localhost --port=8889 --user=root --password=root 2)",
       "Bash(/dev/null:*)",
       "Bash(curl -s http://localhost:3000/admin)",
-      "Bash(npm start:*)"
+      "Bash(npm start:*)",
+      "Bash(/Applications/MAMP/Library/bin/mysql --host=localhost --port=8889 --user=root --password=root compass_db -e \":*)",
+      "Bash(/Applications/MAMP/Library/bin/mysql --host=localhost --port=8889 --user=root --password=root -e \"DROP DATABASE IF EXISTS compass_db; CREATE DATABASE compass_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\")"
     ],
     "additionalDirectories": [
       "/tmp"

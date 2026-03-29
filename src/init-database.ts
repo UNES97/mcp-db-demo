@@ -44,12 +44,38 @@ export async function initializeDatabaseSchema(): Promise<void> {
     await setupConn.end();
 
     const connection = await mysql.createConnection(connConfig);
-    // Also try session-level setting
     try { await connection.query('SET SESSION max_allowed_packet = 67108864'); } catch (e) {}
 
     const sqlFilePath = path.join(__dirname, '../demo_database.sql');
     const sqlContent = fs.readFileSync(sqlFilePath, 'utf8');
     await connection.query(sqlContent);
+
+    // Shift all dates so the data is centered around today
+    // The demo data is anchored at 2026-03-29. Calculate the offset.
+    const anchorDate = new Date('2026-03-29');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diffDays = Math.round((today.getTime() - anchorDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (diffDays !== 0) {
+      console.log(`📅 Shifting dates by ${diffDays} days to center data around today...`);
+      const dateCols = [
+        ['argo_carrier_visit', ['ata', 'atd']],
+        ['argo_visit_details', ['eta', 'etd', 'ata', 'atd']],
+        ['inv_move_event', ['t_fetch', 't_put', 't_discharge']],
+        ['inv_unit_fcy_visit', ['time_in', 'time_out']],
+        ['road_truck_transactions', ['handled', 'time_in', 'time_out']],
+        ['vsl_crane_statistics_delays', ['delay_date']],
+      ];
+      for (const [table, cols] of dateCols) {
+        for (const col of cols) {
+          try {
+            await connection.query(`UPDATE ${table} SET ${col} = DATE_ADD(${col}, INTERVAL ${diffDays} DAY) WHERE ${col} IS NOT NULL`);
+          } catch (e) { /* column might not exist in slim version */ }
+        }
+      }
+    }
+
     await connection.end();
 
     console.log('✓ Database schema imported successfully with fresh data!');
